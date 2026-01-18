@@ -37,7 +37,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--print <prompt>` | `-p` | Non-interactive mode, run prompt and exit |
-| `--model <model>` | `-m` | Model selection (e.g., claude-sonnet-4.5) |
+| `--model <model>` | `-m` | Model selection (e.g., sonnet, opus, haiku) |
 | `--dangerously-skip-permissions` | | YOLO mode - skip all permission prompts |
 | `--allowedTools <tools>` | | Whitelist specific tools |
 | `--help` | `-h` | Show help |
@@ -231,16 +231,16 @@ claude --dangerously-skip-permissions \
 
 | Model | Description |
 |-------|-------------|
-| `claude-sonnet-4.5` | Latest, balanced performance/cost |
-| `claude-opus-4.5` | Most capable, highest cost |
-| `claude-haiku-3.5` | Fast, cost-effective |
+| `sonnet` | Latest, balanced performance/cost |
+| `opus` | Most capable, highest cost |
+| `haiku` | Fast, cost-effective |
 
 ```bash
 # Select model
-claude -m claude-sonnet-4.5 -p "..."
+claude -m sonnet -p "..."
 
 # Change in interactive mode
-> /model claude-opus-4.5
+> /model opus
 ```
 
 ## Troubleshooting
@@ -250,7 +250,7 @@ claude -m claude-sonnet-4.5 -p "..."
 | Permission prompts interrupting | Use `--dangerously-skip-permissions` (sandboxed env only) |
 | Context too large | Use `/compact` or add `.claudeignore` |
 | Auth fails | Re-run `claude` for OAuth or check API key |
-| Slow responses | Try `claude-haiku-3.5` model |
+| Slow responses | Try `haiku` model |
 | Model not found | Check spelling, use `/model` to list |
 
 ## .claudeignore
