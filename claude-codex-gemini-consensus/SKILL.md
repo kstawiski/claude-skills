@@ -81,9 +81,18 @@ Validate clinically and scientifically with Codex and Gemini.
 | **Code Review (SOP)** | "code review SOP", "clinical review", "TODO.md" | Full SOP workflow with TODO.md/IDEAS.md tracking |
 | **Code Review (Simple)** | "review code", "consensus review" | Submit to Codex & Gemini for critical review |
 | **Plan Review** | "plan", "design", "architecture" | Draft plan → Codex review → Gemini review → Consensus |
+| **Implementation** | "implement", "build", "create" | Implement → **Auto code review by all agents** → Approval |
 | **Scientific Analysis** | "statistical analysis", "clinical research", "publication" | Full scientific workflow with completeness checks |
 | **Analysis Execution** | "conduct analysis", "execute plan", "run analyses" | Implement + validate + check completeness |
 | **Report Generation** | "report", "manuscript", "Methods/Results/Discussion" | Publication-ready output with citations |
+
+> [!IMPORTANT]
+> **Implementation workflows ALWAYS include automatic code review:**
+> 1. Plan is validated by all agents
+> 2. Primary agent executes implementation
+> 3. **Remaining agents verify:** features correctly implemented + no regressions
+> 4. Each remaining agent must confirm: "Implementation correct, no regressions"
+> 5. Only complete when ALL remaining agents approve
 
 ### Complete Workflow Example (Scientific Analysis)
 
@@ -107,20 +116,21 @@ USER: "Execute the plan in analysis/plan.md. Generate publication-ready report."
 CLAUDE WILL:
 1. [READ] Load plan from analysis/plan.md
 2. [EXECUTE] Implement each analysis
-3. [VALIDATE] Submit each result to Codex/Gemini for validation
-4. [COMPLETENESS] Check: Are ALL planned analyses done? Missing? Incomplete? Wrong?
-5. [CORRECT] Fix any issues, re-validate
-6. [REPORT] Generate analysis/report.md (Methods, Results, Discussion)
-7. [FIGURES] Create publication-ready figures with captions
-8. [CITATIONS] Add and verify PubMed references
-9. [FINAL] Clinical + Scientific assessment by all models
+3. [CODE REVIEW] Submit implementation to Codex + Gemini for review
+4. [VALIDATE] Ensure all agents approve - no bugs, no regressions
+5. [COMPLETENESS] Check: Are ALL planned analyses done? Missing? Incomplete? Wrong?
+6. [CORRECT] Fix any issues, re-validate with all agents
+7. [REPORT] Generate analysis/report.md (Methods, Results, Discussion)
+8. [FIGURES] Create publication-ready figures with captions
+9. [CITATIONS] Add and verify PubMed references
+10. [FINAL] Clinical + Scientific assessment by all models
 ```
 
-### What This Skill Does NOT Do Automatically
+### What This Skill Does Automatically
 
-- Does NOT invoke Codex/Gemini unless you ask for consensus/review
-- Does NOT start scientific workflow unless explicitly requested
-- Does NOT assume clinical context unless mentioned
+- **Code review after implementation** - All agents verify code before completion
+- **Consensus validation** - Plans require approval from Claude + Codex + Gemini
+- **Regression checking** - Agents verify no new issues introduced
 
 ### Is This Comprehensive?
 
