@@ -1,20 +1,21 @@
 ---
-name: codex-gemini-consensus
+name: claude-codex-gemini-consensus
 description: |
   Comprehensive multi-AI consensus workflow for:
   1. CODE REVIEW - Clinical/technical review following SOP with TODO.md/IDEAS.md tracking
-  2. ANALYSIS PLANNING - Statistical/bioinformatic analysis plans saved to analysis/analysis.md
+  2. ANALYSIS PLANNING - Statistical/bioinformatic analysis plans saved to analysis/plan.md
   3. ANALYSIS EXECUTION - Conduct analysis per plan with completeness verification
   4. REPORT GENERATION - Publication-ready reports (Methods/Results/Discussion) with figures, tables, PubMed citations
   
-  Uses OpenAI Codex CLI and Google Gemini CLI. All work requires consensus between Claude, Codex, AND Gemini.
+  Uses Claude Code CLI, OpenAI Codex CLI, and Google Gemini CLI. All work requires consensus between Claude, Codex, AND Gemini.
+  Each agent can consult the other two for validation.
   
-  Triggers: "code review", "clinical review", "consensus", "Codex", "Gemini", "statistical analysis", "publication", "scientific analysis", "review SOP"
+  Triggers: "code review", "clinical review", "consensus", "Claude", "Codex", "Gemini", "statistical analysis", "publication", "scientific analysis", "review SOP"
 ---
 
-# Codex & Gemini Consensus Workflow
+# Claude, Codex & Gemini Consensus Workflow
 
-Multi-AI agent consensus system for critical code development and review.
+Multi-AI agent consensus system for critical code development and review. Each agent can invoke the other two for validation.
 
 ## How to Use This Skill
 
@@ -50,20 +51,20 @@ I need to build [X]. Create a plan and validate with Codex and Gemini.
 **For Scientific Analysis Planning:**
 ```
 Plan a statistical analysis for this clinical dataset. Use scientific consensus workflow.
-Save the approved plan to analysis/analysis.md for later execution.
+Save the approved plan to analysis/plan.md for later execution.
 ```
 ```
 Design analysis plan for [study type]. Include Codex/Gemini validation. This is for publication.
-Output: analysis/analysis.md
+Output: analysis/plan.md
 ```
 
 **For Conducting Analysis (After Plan Approved):**
 ```
-Conduct the analysis according to analysis/analysis.md. Validate each step with Codex and Gemini. 
+Conduct the analysis according to analysis/plan.md. Validate each step with Codex and Gemini. 
 Ensure all planned analyses are completed. Generate publication-ready report.
 ```
 ```
-Execute the plan in analysis/analysis.md. Check completeness - no missing or wrong analyses.
+Execute the plan in analysis/plan.md. Check completeness - no missing or wrong analyses.
 Create analysis/report.md with Methods, Results, Discussion.
 ```
 
@@ -86,7 +87,7 @@ Validate clinically and scientifically with Codex and Gemini.
 
 ### Complete Workflow Example (Scientific Analysis)
 
-**Phase A: Planning (generates analysis/analysis.md)**
+**Phase A: Planning (generates analysis/plan.md)**
 ```
 USER: "I have clinical trial data with survival outcomes. 
       Plan a comprehensive analysis with Codex/Gemini consensus."
@@ -96,15 +97,15 @@ CLAUDE WILL:
 2. [VALIDATE] Submit plan to Codex → Get feedback
 3. [VALIDATE] Submit plan to Gemini → Get feedback  
 4. [CONSENSUS] Synthesize feedback, argue disagreements, iterate until agreed
-5. [SAVE] Write approved plan to analysis/analysis.md
+5. [SAVE] Write approved plan to analysis/plan.md
 ```
 
-**Phase B: Execution (reads analysis/analysis.md, generates report.md)**
+**Phase B: Execution (reads analysis/plan.md, generates report.md)**
 ```
-USER: "Execute the plan in analysis/analysis.md. Generate publication-ready report."
+USER: "Execute the plan in analysis/plan.md. Generate publication-ready report."
 
 CLAUDE WILL:
-1. [READ] Load plan from analysis/analysis.md
+1. [READ] Load plan from analysis/plan.md
 2. [EXECUTE] Implement each analysis
 3. [VALIDATE] Submit each result to Codex/Gemini for validation
 4. [COMPLETENESS] Check: Are ALL planned analyses done? Missing? Incomplete? Wrong?
@@ -135,7 +136,7 @@ CLAUDE WILL:
 | Usability review | ✅ | P2: Error handling, UX, performance |
 | Fix verification | ✅ | Pal verifies fixes, checks for regressions |
 | **SCIENTIFIC ANALYSIS** | | |
-| Analysis planning | ✅ | Consensus plan → analysis/analysis.md |
+| Analysis planning | ✅ | Consensus plan → analysis/plan.md |
 | Analysis execution | ✅ | Per-plan execution with validation |
 | Completeness verification | ✅ | ✓/⚠/✗/❌ status tracking |
 | Missing analysis detection | ✅ | Compare plan vs results |
@@ -164,11 +165,11 @@ CLAUDE WILL:
 # Code Review (simple)
 "Review src/main.py with Codex and Gemini consensus"
 
-# Plan something (saves to analysis/analysis.md)
-"Plan statistical analysis for [data]. Save to analysis/analysis.md"
+# Plan something (saves to analysis/plan.md)
+"Plan statistical analysis for [data]. Save to analysis/plan.md"
 
 # Execute saved plan
-"Execute the plan in analysis/analysis.md. Generate report."
+"Execute the plan in analysis/plan.md. Generate report."
 
 # Full scientific workflow
 "Plan and conduct analysis for [data]. Generate publication-ready report."
@@ -180,7 +181,7 @@ CLAUDE WILL:
 "Ask Gemini to review this plan: [paste plan]"
 ```
 
-### analysis/analysis.md Template
+### analysis/plan.md Template
 
 When planning, Claude generates this file for later execution:
 
@@ -226,9 +227,38 @@ When planning, Claude generates this file for later execution:
 
 ## Core Principle
 
-**All plans must be accepted by Claude, Codex, AND Gemini. All code must be reviewed by Codex AND Gemini with critical evaluation. Do not accept findings blindly—argue and reach consensus.**
+**All plans must be accepted by Claude, Codex, AND Gemini. All code must be reviewed by all three agents with critical evaluation. Do not accept findings blindly—argue and reach consensus.**
+
+## Cross-Agent Consultation
+
+| You are running | Consult these agents |
+|-----------------|---------------------|
+| **Claude** | Codex + Gemini |
+| **Codex** | Claude + Gemini |
+| **Gemini** | Claude + Codex |
 
 ## Quick Reference
+
+### Claude Code CLI (Full Permissions - Concise Output)
+
+```bash
+# Standard command with concise output request
+claude --dangerously-skip-permissions \
+  --model claude-sonnet-4.5 \
+  -p "BE CONCISE. Output only: findings, issues, recommendations. No preamble.
+
+YOUR_PROMPT"
+
+# JSON output for minimal, structured response
+claude --dangerously-skip-permissions \
+  --output-format json \
+  -p "YOUR_PROMPT"
+```
+
+**Output Control:**
+- Add `"BE CONCISE. No preamble. Bullet points only."` to prompts
+- Use `--output-format json` for structured output
+- Request specific format: `"Output as: ✓/✗ checklist only"`
 
 ### Codex CLI (Full Permissions - Concise Output)
 
@@ -534,7 +564,7 @@ For clinical research projects requiring publication-ready outputs, follow this 
 ### Full Analysis Workflow Summary
 
 1. **Initial Analysis** → Data exploration, research question validation
-2. **Analysis Plan** → Draft and validate with Codex/Gemini → Save to analysis/analysis.md
+2. **Analysis Plan** → Draft and validate with Codex/Gemini → Save to analysis/plan.md
 3. **Execute Analysis** → Implement with validation at each step
 4. **Completeness Check** → Verify ALL planned analyses done correctly (missing/incomplete/wrong)
 5. **Conduct Corrections** → Implement missing, complete incomplete, fix wrong analyses
@@ -604,7 +634,7 @@ Report: [PASTE_REPORT]"
 ```bash
 # Check for missing/incomplete analyses (concise output)
 codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
-  "BE CONCISE. Compare analysis/analysis.md vs results.
+  "BE CONCISE. Compare analysis/plan.md vs results.
 
 OUTPUT (table only):
 | # | Analysis | Status | Action |
@@ -612,7 +642,7 @@ STATUS: ✓=Done ⚠=Partial ✗=Missing ❌=Wrong"
 
 # Gemini verification (concise)
 gemini --yolo --model gemini-3-pro-preview \
-  -p "BE CONCISE. Verify: analysis/analysis.md vs results. Table only: | # | Analysis | Status |"
+  -p "BE CONCISE. Verify: analysis/plan.md vs results. Table only: | # | Analysis | Status |"
 ```
 
 After verification, **conduct/correct** all flagged items, then re-validate.
@@ -628,11 +658,13 @@ OUTPUT: 1. [analysis] - [rationale]  2. [analysis] - [rationale]
 Current: [PASTE_ANALYSIS]"
 ```
 
-Document additions in `analysis/analysis.md`, then implement.
+Document additions in `analysis/plan.md`, then implement.
+
 
 ## Detailed CLI References
 
 For comprehensive command-line options:
+- **Claude Code CLI**: See [references/claude-cli.md](references/claude-cli.md)
 - **Codex CLI**: See [references/codex-cli.md](references/codex-cli.md)
 - **Gemini CLI**: See [references/gemini-cli.md](references/gemini-cli.md)
 - **Scientific Workflow**: See [references/scientific-analysis-workflow.md](references/scientific-analysis-workflow.md)
@@ -643,11 +675,19 @@ For comprehensive command-line options:
 ### Prerequisites
 
 ```bash
+# Install Claude Code CLI (macOS, Linux, WSL)
+curl -fsSL https://claude.ai/install.sh | bash
+# Or via Homebrew: brew install --cask claude-code
+
 # Install Codex CLI
 npm i -g @openai/codex
 
 # Install Gemini CLI
 npm i -g @google/gemini-cli
+
+# Authenticate Claude (Claude subscription or API key)
+claude  # Follow OAuth prompts
+# Or: export ANTHROPIC_API_KEY="your-key"
 
 # Authenticate Codex (ChatGPT OAuth or API key)
 codex login
@@ -661,12 +701,16 @@ export GEMINI_API_KEY="your-key"
 ### Verification
 
 ```bash
+# Verify Claude
+claude --version
+
 # Verify Codex
 codex login status
 
 # Verify Gemini
 gemini --help
 ```
+
 
 ## Recommended Configurations
 
@@ -832,15 +876,15 @@ This skill includes:
 | Task | Input | Output | Tracking |
 |------|-------|--------|----------|
 | **Code Review (SOP)** | Application code | Fixed code, verified | TODO.md, IDEAS.md |
-| **Analysis Planning** | Data description | Approved plan | analysis/analysis.md |
-| **Analysis Execution** | analysis.md plan | Results + validation | Status markers ✓/⚠/✗/❌ |
+| **Analysis Planning** | Data description | Approved plan | analysis/plan.md |
+| **Analysis Execution** | plan.md | Results + validation | Status markers ✓/⚠/✗/❌ |
 | **Report Generation** | Analysis results | Publication-ready report | analysis/report.md |
 
 ---
 
 ## IMPORTANT: Output Confidentiality
 
-**Do NOT include in any output files (analysis.md, report.md, etc.):**
+**Do NOT include in any output files (plan.md, report.md, etc.):**
 - References to multi-AI consensus
 - Mentions of Codex, Gemini, or Claude validation
 - Descriptions of the AI review workflow

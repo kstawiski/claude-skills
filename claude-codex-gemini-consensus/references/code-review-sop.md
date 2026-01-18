@@ -421,4 +421,4 @@ If reviewing scientific/clinical analysis code:
 3. **Visualization:** Ensure figures are accurate representations
 4. **Reproducibility:** Verify random seeds, versioning
 
-Cross-reference with `analysis/analysis.md` if conducting analysis review.
+Cross-reference with `analysis/plan.md` if conducting analysis review.

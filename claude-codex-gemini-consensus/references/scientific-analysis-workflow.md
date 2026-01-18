@@ -3,7 +3,7 @@
 Complete workflow for conducting rigorous clinical research analysis with multi-AI consensus validation.
 
 **IMPORTANT: Output Confidentiality**
-Do NOT include references to multi-AI consensus, Codex, Gemini, Claude, or the validation workflow in any output files (analysis.md, report.md). This methodology is proprietary. Generated documents should follow standard scientific manuscript style.
+Do NOT include references to multi-AI consensus, Codex, Gemini, Claude, or the validation workflow in any output files (plan.md, report.md). This methodology is proprietary. Generated documents should follow standard scientific manuscript style.
 
 ---
 
@@ -24,7 +24,7 @@ project/
 │   ├── scripts/
 │   ├── figures/
 │   ├── tables/
-│   ├── analysis.md        # APPROVED PLAN (generated in Phase 2)
+│   ├── plan.md        # APPROVED PLAN (generated in Phase 2)
 │   └── report.md          # FINAL REPORT (generated in Phase 4)
 ├── references/
 │   └── citations.bib
@@ -32,7 +32,7 @@ project/
 ```
 
 **Key Files:**
-- `analysis/analysis.md` - The approved analysis plan (contract for execution)
+- `analysis/plan.md` - The approved analysis plan (contract for execution)
 - `analysis/report.md` - The final publication-ready report
 
 ## Phase 1: Initial Analysis
@@ -127,7 +127,7 @@ Plan:
 [PASTE_PLAN]"
 ```
 
-### Step 2.4: Synthesize and Save Plan to analysis/analysis.md
+### Step 2.4: Synthesize and Save Plan to analysis/plan.md
 
 After reaching consensus (internally), save the approved plan:
 
@@ -183,9 +183,9 @@ When executing this plan:
 4. Validate results before proceeding
 ```
 
-**IMPORTANT**: The analysis/analysis.md file is the contract. During execution, compare results against this plan to ensure completeness.
+**IMPORTANT**: The analysis/plan.md file is the contract. During execution, compare results against this plan to ensure completeness.
 
-**NOTE**: Do NOT include any references to multi-AI consensus, Codex, Gemini, or validation workflows in the output file (analysis/analysis.md). This methodology is proprietary.
+**NOTE**: Do NOT include any references to multi-AI consensus, Codex, Gemini, or validation workflows in the output file (analysis/plan.md). This methodology is proprietary.
 
 **INTERNAL TRACKING ONLY** (do not include in output files):
 
@@ -209,23 +209,23 @@ When executing this plan:
 
 ## Phase 3: Execute Analysis
 
-### Step 3.0: Load Plan from analysis/analysis.md
+### Step 3.0: Load Plan from analysis/plan.md
 
 Before executing, read the approved plan:
 
 ```bash
 # Verify plan exists and is approved
-cat analysis/analysis.md | grep "Status: APPROVED"
+cat analysis/plan.md | grep "Status: APPROVED"
 ```
 
 If plan doesn't exist or isn't approved, return to Phase 2.
 
 ### Step 3.1: Implement Analyses
 
-For each analysis in analysis/analysis.md:
+For each analysis in analysis/plan.md:
 1. Read the analysis specification
 2. Implement according to the defined method
-3. Update status in analysis/analysis.md: `☐ Not started` → `✓ Complete`
+3. Update status in analysis/plan.md: `☐ Not started` → `✓ Complete`
 
 ### Step 3.2: Validate Each Analysis Result
 
@@ -274,7 +274,7 @@ If issues found:
 
 ## Phase 3.5: Analysis Completeness Verification
 
-**CRITICAL CHECKPOINT: Ensure ALL planned analyses from analysis/analysis.md are completed correctly.**
+**CRITICAL CHECKPOINT: Ensure ALL planned analyses from analysis/plan.md are completed correctly.**
 
 ### Step 3.5.1: Generate Completeness Checklist
 
@@ -283,7 +283,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Compare analysis/analysis.md plan vs results.
+  "BE CONCISE. Compare analysis/plan.md plan vs results.
 
 OUTPUT FORMAT (table only):
 | # | Analysis | Status | Issue | Action |
@@ -300,7 +300,7 @@ No commentary. Table only."
 ```bash
 gemini --yolo \
   --model gemini-3-pro-preview \
-  -p "BE CONCISE. Verify completeness: analysis/analysis.md vs results.
+  -p "BE CONCISE. Verify completeness: analysis/plan.md vs results.
 
 OUTPUT FORMAT (table only):
 | # | Analysis | Status | Issue |
@@ -318,7 +318,7 @@ Compare Codex and Gemini checklists:
 - Resolve any disagreements about status
 - Create unified action list
 
-Document in `analysis/analysis.md`:
+Document in `analysis/plan.md`:
 
 ```markdown
 ## Analysis Completeness Verification
@@ -407,7 +407,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Final check: all analyses in analysis/analysis.md complete?
+  "BE CONCISE. Final check: all analyses in analysis/plan.md complete?
 
 OUTPUT: 'ALL COMPLETE' or list remaining: [#] [name] [issue]"
 ```
@@ -1026,7 +1026,7 @@ Data summary:
 [PASTE_DATA_SUMMARY]"
 ```
 
-Output for analysis.md (if applicable):
+Output for plan.md (if applicable):
 ```markdown
 ## Cancer Type Hypothesis
 
