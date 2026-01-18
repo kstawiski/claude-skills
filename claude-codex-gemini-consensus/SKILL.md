@@ -711,6 +711,17 @@ codex login status
 gemini --help
 ```
 
+## Timeout Requirements
+
+> [!IMPORTANT]
+> CLI tools should be run with a timeout of **at least 30 minutes** per task. Complex analyses, code reviews, and consensus workflows may require extended execution time.
+
+```bash
+# Example with timeout command
+timeout 30m codex exec --yolo "YOUR_TASK"
+timeout 30m gemini --yolo -p "YOUR_TASK"
+timeout 30m claude --dangerously-skip-permissions -p "YOUR_TASK"
+```
 
 ## Recommended Configurations
 
@@ -718,8 +729,9 @@ gemini --help
 
 ```toml
 model = "gpt-5.2-codex"
-approval_policy = "on-request"
-sandbox_mode = "workspace-write"
+approval_policy = "never"  # Full auto for consensus workflows
+sandbox_mode = "danger-full-access"
+web_search = true  # Always enable web search
 
 [sandbox_workspace_write]
 network_access = true
@@ -730,9 +742,14 @@ network_access = true
 ```json
 {
   "model": "gemini-3-pro-preview",
+  "yolo": true,
   "theme": "dark"
 }
 ```
+
+> [!NOTE]
+> Gemini has built-in web search via `google_web_search` tool - no additional config needed.
+
 
 ## Critical Review Prompts (Concise Format)
 
