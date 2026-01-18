@@ -244,7 +244,7 @@ When planning, Claude generates this file for later execution:
 ```bash
 # Standard command with concise output request
 claude --dangerously-skip-permissions \
-  --model claude-sonnet-4.5 \
+  
   -p "BE CONCISE. Output only: findings, issues, recommendations. No preamble.
 
 YOUR_PROMPT"
@@ -265,7 +265,7 @@ claude --dangerously-skip-permissions \
 ```bash
 # Standard command with concise output request
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "BE CONCISE. Output only: findings, issues, recommendations. No preamble.
@@ -274,14 +274,14 @@ YOUR_PROMPT"
 
 # JSON output for minimal, structured response
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  \
   --skip-git-repo-check \
   --json \
   "YOUR_PROMPT"
 
 # With web search
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  \
   --skip-git-repo-check \
   --search \
   "BE CONCISE. YOUR_PROMPT"
@@ -297,14 +297,14 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 ```bash
 # Standard with concise instruction
 gemini --yolo \
-  --model gemini-3-pro-preview \
+  \
   -p "BE CONCISE. Bullet points only. No preamble.
 
 YOUR_PROMPT"
 
 # JSON output for scripting
 gemini --yolo \
-  --model gemini-3-pro-preview \
+  \
   --output-format json \
   -p "YOUR_PROMPT"
 ```
@@ -344,7 +344,7 @@ For maximum context savings, use strict output limits:
 ```bash
 # Codex with strict format
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  \
   --skip-git-repo-check \
   "STRICT FORMAT. Max 10 lines. No prose.
 
@@ -357,7 +357,7 @@ VERDICT: [word]"
 
 # Pipe to head for hard truncation (if output still verbose)
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  \
   --skip-git-repo-check \
   "YOUR_PROMPT" | head -20
 ```
@@ -386,7 +386,7 @@ BE CONCISE. No preamble. Output format:
 1. **Claude proposes** initial implementation plan
 2. **Submit to Codex** for critical review:
    ```bash
-   codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
+   codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
      "BE CONCISE. No preamble. Review this plan. Output:
 - ISSUES: [list]
 - MISSING: [list]
@@ -396,7 +396,7 @@ Plan: [PASTE_PLAN]"
    ```
 3. **Submit to Gemini** for independent review:
    ```bash
-   gemini --yolo --model gemini-3-pro-preview \
+   gemini --yolo \
      -p "BE CONCISE. No preamble. Review this plan. Output:
 - ISSUES: [list]
 - MISSING: [list]
@@ -418,7 +418,7 @@ Submit code to both agents for critical review:
 
 ```bash
 # Codex review (concise)
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
   "BE CONCISE. Review code. Output only:
 - BUGS: [list or 'None']
 - SECURITY: [list or 'None']
@@ -428,7 +428,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --sk
 Code: [PASTE_CODE]"
 
 # Gemini review (concise)
-gemini --yolo --model gemini-3-pro-preview \
+gemini --yolo \
   -p "BE CONCISE. Review code. Output only:
 - BUGS: [list or 'None']
 - SECURITY: [list or 'None']
@@ -489,7 +489,7 @@ All changes require **consensus** between Claude and Pal (Codex/Gemini). Review 
 # Claude reviews independently for P0-P3 issues
 
 # Pal reviews independently (concise)
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
   "BE CONCISE. Code review. Clinical context.
 
 Output: P0: [list] | P1: [list] | P2: [list] | P3: [list]
@@ -499,7 +499,7 @@ Code: $(cat [MODULE])"
 
 **Consensus:** Compare findings. For disagreements:
 ```bash
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
   "BE CONCISE. Is [ISSUE] valid? Output: Y/N | REASON"
 ```
 
@@ -507,7 +507,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --sk
 
 ```bash
 # Validate fix plan
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
   "BE CONCISE. Validate fix plan.
 
 Issues: [LIST]
@@ -524,7 +524,7 @@ After implementing fixes, **ALL agents must verify** the fix is correct and ther
 # Claude reviews the fix first, then submits to other agents:
 
 # Codex verification
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check --search \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --search \
   "BE CONCISE. Verify these fixes are correct and no regressions introduced.
 
 Issues fixed: [LIST]
@@ -537,7 +537,7 @@ VERDICT: APPROVED / NEEDS_CHANGES
 Code: $(cat [MODULE])"
 
 # Gemini verification (independent)
-gemini --yolo --model gemini-3-pro-preview \
+gemini --yolo \
   -p "BE CONCISE. Verify fixes are correct. Check for regressions.
 
 Issues fixed: [LIST]
@@ -609,7 +609,7 @@ For oncology research, you may want to add a cancer type hypothesis step:
 
 ```bash
 # Example only - adapt to your domain
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check --search \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --search \
   "BE CONCISE. Hypothesize cancer type. Output:
 1. [Type] - [confidence] - [evidence] - PMID:X
 Data: [PASTE_DATA_SUMMARY]"
@@ -643,13 +643,13 @@ See `references/scientific-analysis-workflow.md` Appendix for more domain-specif
 
 ```bash
 # Clinical assessment (concise)
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
   "BE CONCISE. Clinical assessment.
 OUTPUT: ACTIONABLE: Y/N | EFFECT SIZE: meaningful/marginal | GENERALIZABLE: Y/N | VERDICT: [pass/fail]
 Report: [PASTE_REPORT]"
 
 # Scientific assessment (concise)
-gemini --yolo --model gemini-3-pro-preview \
+gemini --yolo \
   -p "BE CONCISE. Scientific assessment.
 OUTPUT: METHODS: sound/flawed | CONCLUSIONS: supported/unsupported | NOVEL: Y/N | VERDICT: [pass/fail]
 Report: [PASTE_REPORT]"
@@ -661,7 +661,7 @@ Report: [PASTE_REPORT]"
 
 ```bash
 # Check for missing/incomplete analyses (concise output)
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
   "BE CONCISE. Compare analysis/plan.md vs results.
 
 OUTPUT (table only):
@@ -669,7 +669,7 @@ OUTPUT (table only):
 STATUS: ✓=Done ⚠=Partial ✗=Missing ❌=Wrong"
 
 # Gemini verification (concise)
-gemini --yolo --model gemini-3-pro-preview \
+gemini --yolo \
   -p "BE CONCISE. Verify: analysis/plan.md vs results. Table only: | # | Analysis | Status |"
 ```
 
@@ -680,7 +680,7 @@ After verification, **conduct/correct** all flagged items, then re-validate.
 After completing planned analyses:
 
 ```bash
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
   "BE CONCISE. What additional analyses needed?
 OUTPUT: 1. [analysis] - [rationale]  2. [analysis] - [rationale]
 Current: [PASTE_ANALYSIS]"
@@ -771,12 +771,21 @@ network_access = true
 {
   "model": "gemini-3-pro-preview",
   "yolo": true,
-  "theme": "dark"
+  "theme": "dark",
+  "output": {
+    "format": "text"
+  },
+  "tools": {
+    "enableToolOutputTruncation": false,
+    "truncateToolOutputThreshold": -1
+  }
 }
 ```
 
 > [!NOTE]
-> Gemini has built-in web search via `google_web_search` tool - no additional config needed.
+> - `output.format: "text"` ensures clean text output without JSON wrapper
+> - `truncateToolOutputThreshold: -1` disables truncation
+> - Gemini has built-in web search via `google_web_search` tool
 
 
 ## Critical Review Prompts (Concise Format)

@@ -78,7 +78,7 @@ claude -p "Summarize README.md"
 
 # Full auto with all permissions (YOLO mode)
 claude --dangerously-skip-permissions \
-  --model claude-sonnet-4.5 \
+  
   -p "YOUR_TASK"
 
 # Piping input
@@ -185,7 +185,7 @@ Configure MCP servers in Claude settings:
 
 ```bash
 claude --dangerously-skip-permissions \
-  --model claude-sonnet-4.5 \
+  
   -p "Review this code critically for clinical research. \
       Check: correctness, edge cases, error handling, \
       security, performance. Be rigorous. \
