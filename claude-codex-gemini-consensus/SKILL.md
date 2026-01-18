@@ -518,24 +518,52 @@ Output per fix: CORRECT/INCORRECT | [concern]"
 
 #### 3. Execution & Verification
 
+After implementing fixes, **ALL agents must verify** the fix is correct and there are no regressions:
+
 ```bash
-# Verify fixes applied
-codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check \
-  "BE CONCISE. Verify fixes. No regressions?
+# Claude reviews the fix first, then submits to other agents:
 
-Issues: [LIST]
-Output: | Issue | Fixed | Regression |
+# Codex verification
+codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.2-codex --skip-git-repo-check --search \
+  "BE CONCISE. Verify these fixes are correct and no regressions introduced.
 
-VERDICT: ALL_FIXED / ISSUES_REMAIN
+Issues fixed: [LIST]
+Code changes: [DIFF or CODE]
+
+Output:
+| Issue | Fix Correct? | Regressions? |
+VERDICT: APPROVED / NEEDS_CHANGES
 
 Code: $(cat [MODULE])"
+
+# Gemini verification (independent)
+gemini --yolo --model gemini-3-pro-preview \
+  -p "BE CONCISE. Verify fixes are correct. Check for regressions.
+
+Issues fixed: [LIST]
+Code: $(cat [MODULE])
+
+Output: | Issue | Correct | Regression | VERDICT: APPROVED/REJECTED"
+
+# Claude verification (if Codex/Gemini are primary)
+claude --dangerously-skip-permissions -p "BE CONCISE. Verify fixes. No regressions?
+Issues: [LIST]
+Code: $(cat [MODULE])
+Output: | Issue | Fixed | Regression | VERDICT: APPROVED/REJECTED"
 ```
+
+> [!IMPORTANT]
+> **Do NOT mark module as complete until ALL agents confirm:**
+> 1. Each fix is correct
+> 2. No regressions introduced
+> 3. VERDICT is APPROVED from all agents
 
 #### 4. Completion
 
-1. Mark `[DONE]` in TODO.md
-2. Log nice-to-haves to IDEAS.md
-3. **Pick next [PENDING] module - DON'T STOP**
+1. Confirm **all agents approved** (Claude + Codex + Gemini)
+2. Mark `[DONE]` in TODO.md
+3. Log nice-to-haves to IDEAS.md
+4. **Pick next [PENDING] module - DON'T STOP**
 
 ### Quick Commands
 

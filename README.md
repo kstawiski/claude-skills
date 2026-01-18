@@ -8,30 +8,30 @@ Install skills for all AI agents:
 
 ```bash
 # Claude
-[ -d ~/.claude/skills/.git ] && git -C ~/.claude/skills pull || git clone --depth 1 https://github.com/kstawiski/claude-skills ~/.claude/skills
+[ -d ~/.claude/skills/.git ] && git -C ~/.claude/skills pull || (mkdir -p ~/.claude/skills && cd ~/.claude/skills && git init && git remote add origin https://github.com/kstawiski/claude-skills && git fetch --depth 1 && git checkout -f origin/main)
 
 # Codex
-[ -d ~/.codex/skills/.git ] && git -C ~/.codex/skills pull || git clone --depth 1 https://github.com/kstawiski/claude-skills ~/.codex/skills
+[ -d ~/.codex/skills/.git ] && git -C ~/.codex/skills pull || (mkdir -p ~/.codex/skills && cd ~/.codex/skills && git init && git remote add origin https://github.com/kstawiski/claude-skills && git fetch --depth 1 && git checkout -f origin/main)
 
-# Gemini
-[ -d ~/.gemini/skills/.git ] && git -C ~/.gemini/skills pull || git clone --depth 1 https://github.com/kstawiski/claude-skills ~/.gemini/skills
+# Gemini  
+[ -d ~/.gemini/skills/.git ] && git -C ~/.gemini/skills pull || (mkdir -p ~/.gemini/skills && cd ~/.gemini/skills && git init && git remote add origin https://github.com/kstawiski/claude-skills && git fetch --depth 1 && git checkout -f origin/main)
 
 # Antigravity
-[ -d ~/.gemini/antigravity/skills/.git ] && git -C ~/.gemini/antigravity/skills pull || git clone --depth 1 https://github.com/kstawiski/claude-skills ~/.gemini/antigravity/skills
+[ -d ~/.gemini/antigravity/skills/.git ] && git -C ~/.gemini/antigravity/skills pull || (mkdir -p ~/.gemini/antigravity/skills && cd ~/.gemini/antigravity/skills && git init && git remote add origin https://github.com/kstawiski/claude-skills && git fetch --depth 1 && git checkout -f origin/main)
 ```
 
 ### One-liner (all agents)
 
 ```bash
-for d in ~/.claude/skills ~/.codex/skills ~/.gemini/skills ~/.gemini/antigravity/skills; do [ -d "$d/.git" ] && git -C "$d" pull || git clone --depth 1 https://github.com/kstawiski/claude-skills "$d"; done
+for d in ~/.claude/skills ~/.codex/skills ~/.gemini/skills ~/.gemini/antigravity/skills; do [ -d "$d/.git" ] && git -C "$d" pull || (mkdir -p "$d" && cd "$d" && git init && git remote add origin https://github.com/kstawiski/claude-skills && git fetch --depth 1 && git checkout -f origin/main); done
 ```
 
-## Update Alias
+### Update Alias
 
-Add this to your shell profile (`~/.zshrc` or `~/.bashrc`) for easy updates:
+Add to your shell profile (`~/.zshrc` or `~/.bashrc`):
 
 ```bash
-echo 'alias ai-skills-update='\''for d in ~/.claude/skills ~/.codex/skills ~/.gemini/skills ~/.gemini/antigravity/skills; do [ -d "$d/.git" ] && git -C "$d" pull || git clone --depth 1 https://github.com/kstawiski/claude-skills "$d"; done'\''' >> ~/.zshrc && source ~/.zshrc
+alias ai-skills-update='for d in ~/.claude/skills ~/.codex/skills ~/.gemini/skills ~/.gemini/antigravity/skills; do [ -d "$d/.git" ] && git -C "$d" pull || (mkdir -p "$d" && cd "$d" && git init && git remote add origin https://github.com/kstawiski/claude-skills 2>/dev/null; git fetch --depth 1 && git checkout -f origin/main); done'
 ```
 
 Then update all skills with:
