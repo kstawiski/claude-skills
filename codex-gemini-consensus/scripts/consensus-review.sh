@@ -73,9 +73,9 @@ echo ""
 
 # Check if codex is available
 if command -v codex &> /dev/null; then
-    codex exec --full-auto \
+    codex exec --dangerously-bypass-approvals-and-sandbox \
         --model gpt-5.2-codex \
-        --sandbox danger-full-access \
+        --skip-git-repo-check \
         "$PROMPT" 2>&1 || echo "⚠️  Codex review failed or not authenticated"
 else
     echo "⚠️  Codex CLI not installed. Install with: npm i -g @openai/codex"

@@ -51,6 +51,7 @@ codex logout
 | `--cd, -C` | path | Working directory |
 | `--add-dir` | path | Additional writable directories |
 | `--search` | boolean | Enable web search tool |
+| `--skip-git-repo-check` | boolean | Allow running outside Git repositories |
 | `-c key=value` | config | Override config values |
 
 ## Commands
@@ -81,11 +82,24 @@ codex --search "Find latest API docs and update code"
 codex exec "Generate unit tests"
 codex e "Generate unit tests"  # alias
 
-# Full auto with all permissions
-codex exec --full-auto \
+# YOLO mode - full permissions, no approvals (recommended for automation)
+codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
-  --sandbox danger-full-access \
+  --skip-git-repo-check \
   "YOUR_TASK"
+
+# Short form with --yolo alias
+codex exec --yolo \
+  --model gpt-5.2-codex \
+  --skip-git-repo-check \
+  "YOUR_TASK"
+
+# With web search
+codex exec --dangerously-bypass-approvals-and-sandbox \
+  --model gpt-5.2-codex \
+  --skip-git-repo-check \
+  --search \
+  "Search for best practices and implement"
 
 # Read prompt from stdin
 echo "Fix all linting errors" | codex exec -
@@ -274,16 +288,28 @@ This is a Python medical imaging analysis project.
 | Safe | Every command | read-only | Exploration, audits |
 | Balanced | On failure | workspace-write | Daily development |
 | Full Auto | On failure | workspace-write | Trusted tasks |
-| YOLO | Never | danger-full-access | CI/isolated environments |
+| **YOLO** | **Never** | **None** | **Automation, CI, consensus workflows** |
+
+**For consensus workflows, use YOLO mode (`--dangerously-bypass-approvals-and-sandbox` or `--yolo`).**
 
 ## Common Patterns
+
+### General Code Review
+
+```bash
+codex exec --dangerously-bypass-approvals-and-sandbox \
+  --model gpt-5.2-codex \
+  --skip-git-repo-check \
+  "Review this code critically. Check: correctness, edge cases, \
+   error handling, security, performance. Code: $(cat src/main.py)"
+```
 
 ### Critical Review (Clinical Research)
 
 ```bash
-codex exec --full-auto \
+codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
-  --sandbox danger-full-access \
+  --skip-git-repo-check \
   "Review this code critically for clinical research. \
    Check: correctness, edge cases, error handling, \
    security, performance. Be rigorous. Code: $(cat src/analysis.py)"
@@ -292,10 +318,20 @@ codex exec --full-auto \
 ### Automated Testing
 
 ```bash
-codex exec --full-auto \
-  --sandbox workspace-write \
-  -c 'sandbox_workspace_write.network_access=true' \
+codex exec --dangerously-bypass-approvals-and-sandbox \
+  --model gpt-5.2-codex \
+  --skip-git-repo-check \
   "Run all tests, fix any failures, ensure 100% pass rate"
+```
+
+### With Web Search
+
+```bash
+codex exec --dangerously-bypass-approvals-and-sandbox \
+  --model gpt-5.2-codex \
+  --skip-git-repo-check \
+  --search \
+  "Search PubMed for latest findings on [TOPIC] and summarize"
 ```
 
 ### CI/CD Integration
@@ -323,9 +359,11 @@ codex exec --full-auto \
 
 | Problem | Solution |
 |---------|----------|
+| "Not a git repository" error | Add `--skip-git-repo-check` flag |
 | Network blocked | `-c 'sandbox_workspace_write.network_access=true'` |
 | Sandbox errors (WSL) | Update WSL2, use container, or `--yolo` in isolated env |
 | Sandbox errors (macOS) | `xcode-select --install` |
 | Auth loops | `codex logout && codex login` |
 | Model not found | Check model string spelling |
 | Approvals won't stop | Check profile, use `codex -a never` |
+| Permission denied | Use `--sandbox danger-full-access` |
