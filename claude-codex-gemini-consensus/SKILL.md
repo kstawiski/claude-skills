@@ -373,6 +373,48 @@ This 2-line header prevents infinite loops while allowing thorough reviews.
 
 ---
 
+## Guaranteed REVIEWER_MODE: Wrapper Script
+
+> [!TIP]
+> **Use `scripts/review.sh` to GUARANTEE REVIEWER_MODE is always included.**
+>
+> The wrapper script automatically prepends REVIEWER_MODE to every prompt, eliminating human error.
+
+### Usage
+
+```bash
+# Instead of manually adding REVIEWER_MODE to prompts:
+./scripts/review.sh codex "Review this code for bugs"
+./scripts/review.sh gemini "Validate this analysis plan"
+./scripts/review.sh claude "Check for security issues"
+
+# With options:
+./scripts/review.sh codex "Search for best practices" --search
+./scripts/review.sh codex "Review in context" --cd /path/to/project
+```
+
+### Why Use the Wrapper?
+
+| Manual Prompts | Wrapper Script |
+|----------------|----------------|
+| Must remember to add REVIEWER_MODE | Automatic injection |
+| Risk of forgetting | Guaranteed protection |
+| Copy-paste errors | Consistent format |
+| Verbose commands | Simple interface |
+
+### How It Works
+
+The script prepends this header to EVERY prompt:
+
+```
+REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex, gemini).
+You MAY read files, web search, and run sanity checks. Provide YOUR expert review only.
+```
+
+This makes infinite loops **impossible** when using the wrapper.
+
+---
+
 ## Quick Reference
 
 ### Claude Code CLI (Full Permissions - Concise Output)
@@ -1095,6 +1137,7 @@ This skill includes:
 | `references/gemini-cli.md` | Complete Gemini CLI command reference |
 | `references/scientific-analysis-workflow.md` | Full scientific analysis workflow (750+ lines) |
 | `references/mcp-workflow.md` | MCP integration patterns |
+| `scripts/review.sh` | **GUARANTEED REVIEWER_MODE** - Wrapper that auto-injects REVIEWER_MODE |
 | `scripts/consensus-review.sh` | Helper script for batch consensus reviews |
 
 **Total coverage**: ~2500+ lines of instructions and references.
