@@ -9,6 +9,20 @@ Do NOT include references to multi-AI consensus, Codex, Gemini, or the validatio
 
 ---
 
+## CRITICAL: Preventing Infinite Loops
+
+When invoking other agents for review, **always include REVIEWER_MODE** to prevent infinite loops:
+
+```
+REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex, gemini).
+You MAY read files and web search. Provide YOUR expert review only.
+```
+
+**Reviewers can:** Read files, search code, web search
+**Reviewers cannot:** Invoke other AI agent CLIs
+
+---
+
 ## Quick Start
 
 **Invoke with:**
@@ -131,7 +145,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Independent code review. Clinical context.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Independent code review. Clinical context.
 
 REVIEW FOR:
 - P0: Security, PII/PHI leaks, data corruption
@@ -157,7 +173,9 @@ Compare findings. For disagreements:
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "BE CONCISE. I found [ISSUE]. You didn't flag it. 
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+
+BE CONCISE. I found [ISSUE]. You didn't flag it.
 
 Is this a valid issue? Why/why not?
 
@@ -200,7 +218,9 @@ For each agreed issue, propose a fix:
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "BE CONCISE. Validate fix plan.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Validate fix plan.
 
 ISSUES:
 1. [issue1]
@@ -221,7 +241,9 @@ If Pal raises concerns, discuss and adjust:
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "BE CONCISE. You flagged concern with [FIX].
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+
+BE CONCISE. You flagged concern with [FIX].
 
 Alternative approach: [NEW_APPROACH]
 
@@ -243,7 +265,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Verify fixes applied correctly.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Verify fixes applied correctly.
 
 ORIGINAL ISSUES:
 1. [issue1]
@@ -321,12 +345,16 @@ DO NOT STOP UNTIL ALL MODULES ARE [DONE]
 
 ## Consensus Commands (Concise Format)
 
+> **Note:** All commands include `REVIEWER_MODE` to prevent infinite loops.
+
 ### Initial Review Request
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "BE CONCISE. Review for P0-P3 issues. Clinical context.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Review for P0-P3 issues. Clinical context.
 
 Output: P0: [list] | P1: [list] | P2: [list] | P3: [list]
 
@@ -338,7 +366,9 @@ Code: [PASTE_CODE]"
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "BE CONCISE. Is [ISSUE] valid? Output: Y/N | REASON"
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+
+BE CONCISE. Is [ISSUE] valid? Output: Y/N | REASON"
 ```
 
 ### Fix Validation
@@ -346,7 +376,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "BE CONCISE. Is fix for [ISSUE] correct? Output: Y/N | CONCERN"
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+
+BE CONCISE. Is fix for [ISSUE] correct? Output: Y/N | CONCERN"
 ```
 
 ### Fix Verification
@@ -354,7 +386,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "BE CONCISE. Verify: [ISSUES] fixed in [CODE]? Output: FIXED/NOT_FIXED per issue"
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Verify: [ISSUES] fixed in [CODE]? Output: FIXED/NOT_FIXED per issue"
 ```
 
 ---

@@ -7,6 +7,20 @@ Do NOT include references to multi-AI consensus, Codex, Gemini, Claude, or the v
 
 ---
 
+## CRITICAL: Preventing Infinite Loops
+
+When invoking other agents for review, **always include REVIEWER_MODE** to prevent infinite loops:
+
+```
+REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex, gemini).
+You MAY read files and web search. Provide YOUR expert review only.
+```
+
+**Reviewers can:** Read files, search code, web search for literature
+**Reviewers cannot:** Invoke other AI agent CLIs
+
+---
+
 ## Overview
 
 This workflow ensures all analyses are validated by Claude, Codex, and Gemini before producing publication-ready scientific reports.
@@ -54,7 +68,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Review research question and data.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files and run sanity checks.
+
+BE CONCISE. Review research question and data.
 
 OUTPUT FORMAT:
 - FEASIBLE: Y/N
@@ -68,7 +84,9 @@ Data summary: [DATA_SUMMARY]"
 ```bash
 gemini --yolo \
   --model gemini-3-pro-preview \
-  -p "BE CONCISE. Review research question and data.
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files and run sanity checks.
+
+BE CONCISE. Review research question and data.
 
 OUTPUT FORMAT:
 - FEASIBLE: Y/N
@@ -96,7 +114,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Review this analysis plan for publication.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files and web search.
+
+BE CONCISE. Review this analysis plan for publication.
 
 OUTPUT FORMAT:
 - STATISTICAL ISSUES: [list or 'None']
@@ -114,7 +134,9 @@ Plan:
 ```bash
 gemini --yolo \
   --model gemini-3-pro-preview \
-  -p "BE CONCISE. Review this analysis plan for publication.
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files and web search.
+
+BE CONCISE. Review this analysis plan for publication.
 
 OUTPUT FORMAT:
 - STATISTICAL ISSUES: [list or 'None']
@@ -232,12 +254,15 @@ For each analysis in analysis/plan.md:
 For each major analysis, submit results to both agents:
 
 ```bash
-# Codex validation (concise)
+# Codex validation (concise) - REVIEWER_MODE allows sanity checks
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Validate this analysis result.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You MAY read files and run quick sanity checks to verify calculations.
+
+BE CONCISE. Validate this analysis result.
 
 OUTPUT FORMAT:
 - STATISTICAL ERRORS: [list or 'None']
@@ -250,10 +275,13 @@ Code: [PASTE_CODE]"
 ```
 
 ```bash
-# Gemini validation (concise)
+# Gemini validation (concise) - REVIEWER_MODE allows sanity checks
 gemini --yolo \
   --model gemini-3-pro-preview \
-  -p "BE CONCISE. Validate this analysis result.
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You MAY read files and run quick sanity checks to verify calculations.
+
+BE CONCISE. Validate this analysis result.
 
 OUTPUT FORMAT:
 - STATISTICAL ERRORS: [list or 'None']
@@ -283,7 +311,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Compare analysis/plan.md plan vs results.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Compare analysis/plan.md plan vs results.
 
 OUTPUT FORMAT (table only):
 | # | Analysis | Status | Issue | Action |
@@ -300,7 +330,9 @@ No commentary. Table only."
 ```bash
 gemini --yolo \
   --model gemini-3-pro-preview \
-  -p "BE CONCISE. Verify completeness: analysis/plan.md vs results.
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Verify completeness: analysis/plan.md vs results.
 
 OUTPUT FORMAT (table only):
 | # | Analysis | Status | Issue |
@@ -385,7 +417,10 @@ Each corrected analysis must be validated:
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "Validate this CORRECTED analysis.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You MAY read files and run sanity checks to verify the correction.
+
+Validate this CORRECTED analysis.
 
 Original issue: [DESCRIBE WHAT WAS WRONG/MISSING]
 Correction applied: [DESCRIBE THE FIX]
@@ -407,7 +442,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Final check: all analyses in analysis/plan.md complete?
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Final check: all analyses in analysis/plan.md complete?
 
 OUTPUT: 'ALL COMPLETE' or list remaining: [#] [name] [issue]"
 ```
@@ -497,11 +534,13 @@ Create `analysis/report.md`:
 For each section, draft then validate:
 
 ```bash
-# Validate Methods section
+# Validate Methods section - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "Review this Methods section for scientific manuscript.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for standards.
+
+Review this Methods section for scientific manuscript.
 
 CHECK:
 1. Reproducibility - Can another researcher replicate this?
@@ -827,7 +866,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. Review figures/tables for publication.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Review figures/tables for publication.
 
 Output: | Item | Issue | Fix |
 
@@ -842,7 +883,10 @@ Check: accuracy, clarity, completeness, captions, standards."
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
-  "Assess this analysis from a CLINICAL perspective.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You MAY web search for clinical guidelines and literature.
+
+Assess this analysis from a CLINICAL perspective.
 
 EVALUATE:
 1. Clinical relevance - Are findings actionable?
@@ -863,7 +907,10 @@ Provide clinical assessment."
 ```bash
 gemini --yolo \
   --model gemini-3-pro-preview \
-  -p "Assess this analysis from a SCIENTIFIC perspective.
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You MAY web search for literature and methodology references.
+
+Assess this analysis from a SCIENTIFIC perspective.
 
 EVALUATE:
 1. Rigor - Is methodology sound?
@@ -922,7 +969,10 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --search \
-  "Verify these PubMed citations are accurate and relevant.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You MAY and SHOULD web search to verify citations.
+
+Verify these PubMed citations are accurate and relevant.
 
 For each citation:
 1. Verify PMID exists and matches the claim
@@ -938,44 +988,49 @@ Citations:
 
 ### Concise Output Pattern
 
-Always prepend to prompts:
+Always prepend to prompts (REVIEWER_MODE prevents infinite loops):
 ```
+REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files and web search.
 BE CONCISE. No preamble. Output format: [specify structure]
 ```
 
 ### Full Consensus Review Cycle
 
 ```bash
-# 1. Submit to Codex (concise)
+# 1. Submit to Codex (REVIEWER_MODE)
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
-  "BE CONCISE. [TASK]. Output: ISSUES: / VERDICT:"
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+BE CONCISE. [TASK]. Output: ISSUES: / VERDICT:"
 
-# 2. Submit to Gemini (concise)
+# 2. Submit to Gemini (REVIEWER_MODE)
 gemini --yolo \
   --model gemini-3-pro-preview \
-  -p "BE CONCISE. [TASK]. Output: ISSUES: / VERDICT:"
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+BE CONCISE. [TASK]. Output: ISSUES: / VERDICT:"
 
-# 3. Synthesize in Claude
+# 3. Synthesize in Claude (orchestrator)
 # 4. Iterate until consensus
 ```
 
 ### With Web Search (for literature)
 
 ```bash
-# Codex with search (concise)
+# Codex with search (REVIEWER_MODE)
 codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --search \
-  "BE CONCISE. Search [TOPIC]. Output: 1. [finding] PMID:X  2. [finding] PMID:Y"
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.
+BE CONCISE. Search [TOPIC]. Output: 1. [finding] PMID:X  2. [finding] PMID:Y"
 
-# Gemini with search (concise)
+# Gemini with search (REVIEWER_MODE)
 gemini --yolo \
   --model gemini-3-pro-preview \
-  -p "BE CONCISE. Search [TOPIC]. Output: 1. [finding] PMID:X  2. [finding] PMID:Y"
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.
+BE CONCISE. Search [TOPIC]. Output: 1. [finding] PMID:X  2. [finding] PMID:Y"
 ```
 
 ## Checklist Before Submission
@@ -1006,6 +1061,8 @@ gemini --yolo \
 
 ## Appendix: Domain-Specific Examples
 
+> **Note:** All examples include REVIEWER_MODE to prevent infinite loops when agents have consensus skills installed.
+
 ### Example A: Cancer Type Hypothesis (Oncology)
 
 For oncology research with molecular data, you may want to hypothesize the cancer type:
@@ -1015,7 +1072,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --search \
-  "BE CONCISE. Hypothesize cancer type from this molecular data.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for PMIDs.
+
+BE CONCISE. Hypothesize cancer type from this molecular data.
 
 OUTPUT FORMAT:
 1. [Cancer Type] - Confidence: HIGH/MED/LOW - Evidence: [key features] - PMID: [citation]
@@ -1048,7 +1107,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --search \
-  "BE CONCISE. Based on this gene expression data, hypothesize the drug mechanism.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.
+
+BE CONCISE. Based on this gene expression data, hypothesize the drug mechanism.
 
 OUTPUT FORMAT:
 1. [Mechanism] - Confidence: HIGH/MED/LOW - Evidence: [pathways] - PMID: [citation]
@@ -1063,7 +1124,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --search \
-  "BE CONCISE. Identify candidate biomarkers from this data.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.
+
+BE CONCISE. Identify candidate biomarkers from this data.
 
 OUTPUT FORMAT:
 | Biomarker | AUC | Sensitivity | Specificity | Literature Support |
@@ -1078,7 +1141,9 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --model gpt-5.2-codex \
   --skip-git-repo-check \
   --search \
-  "BE CONCISE. Classify this variant using ACMG criteria.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.
+
+BE CONCISE. Classify this variant using ACMG criteria.
 
 OUTPUT FORMAT:
 - Classification: [Pathogenic/Likely Pathogenic/VUS/Likely Benign/Benign]
@@ -1088,4 +1153,4 @@ OUTPUT FORMAT:
 Variant: [VARIANT_INFO]"
 ```
 
-These are examples only. Adapt the prompts to your specific domain and research question.
+These are examples only. Adapt the prompts to your specific domain and research question. **Always include REVIEWER_MODE when invoking other agents.**

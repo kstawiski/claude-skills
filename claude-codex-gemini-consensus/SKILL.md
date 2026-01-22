@@ -239,13 +239,181 @@ When planning, Claude generates this file for later execution:
 
 **All plans must be accepted by Claude, Codex, AND Gemini. All code must be reviewed by all three agents with critical evaluation. Do not accept findings blindly—argue and reach consensus.**
 
+---
+
+## CRITICAL: Preventing Infinite Consensus Loops
+
+> [!CAUTION]
+> **INFINITE LOOP PREVENTION** - This section is mandatory reading.
+>
+> When multiple AI agents have consensus skills installed, invoking each other for reviews can create infinite loops:
+> - Claude calls Codex → Codex calls Claude → Claude calls Codex → ∞
+>
+> **The solution: ORCHESTRATOR vs REVIEWER mode.**
+
+### Two Modes of Operation
+
+| Mode | Role | Can Invoke Other Agents? | Can Read Files? | Can Web Search? |
+|------|------|--------------------------|-----------------|-----------------|
+| **ORCHESTRATOR** | Primary agent driving the task | ✅ YES | ✅ YES | ✅ YES |
+| **REVIEWER** | Agent providing expert review | ❌ NO | ✅ YES | ✅ YES |
+
+### ORCHESTRATOR Mode (Default when user initiates)
+
+When the **user directly asks you** to review code, plan analysis, or run consensus:
+- You ARE the orchestrator
+- You MAY invoke other agents (Codex, Gemini, Claude) for reviews
+- You synthesize feedback and make final decisions
+- You drive the workflow to completion
+
+### REVIEWER Mode (When invoked by another agent)
+
+When **another AI agent invokes you via CLI**, you are a REVIEWER:
+- You provide YOUR expert opinion only
+- You MAY read files to understand context
+- You MAY use web search to verify facts
+- You **MUST NOT** invoke other agent CLIs (codex, claude, gemini)
+- Your review is a "leaf node" - final, not the start of another consensus
+
+### How to Detect You Are a REVIEWER
+
+You are in REVIEWER mode if ANY of these are true:
+1. Your prompt contains `REVIEWER_MODE` marker
+2. Your prompt contains `DO NOT INVOKE OTHER AGENTS`
+3. You were invoked via CLI with a specific review task (not a user conversation)
+4. The prompt is clearly a single-shot review request (not interactive)
+
+### REVIEWER Mode Constraints
+
+When in REVIEWER mode, you **MUST**:
+
+```
+✅ ALLOWED:
+- Read files (cat, Read tool, etc.)
+- Search code (grep, Grep tool, etc.)
+- Web search for verification and literature
+- Run quick sanity checks (execute code to verify calculations)
+- Run existing tests to validate implementations
+- Provide detailed expert review
+- Point out issues, bugs, security concerns
+- Give APPROVED/NEEDS_CHANGES verdict
+
+❌ FORBIDDEN:
+- Invoke `codex exec ...` or `codex ...`
+- Invoke `claude ...` or `claude -p ...`
+- Invoke `gemini ...` or `gemini -p ...`
+- Start your own consensus workflow
+- Delegate review to other agents
+- Create sub-reviews or nested consensus
+```
+
+**Key distinction:** Reviewers CAN execute code for verification (run tests, check calculations) but CANNOT invoke other AI agent CLIs.
+
+### Why This Works
+
+```
+USER → ORCHESTRATOR (Claude)
+         ├── REVIEWER (Codex) → Reviews, returns verdict, STOPS
+         └── REVIEWER (Gemini) → Reviews, returns verdict, STOPS
+       ← Synthesizes feedback, reaches conclusion
+```
+
+Each reviewer is a terminal node. No recursive invocations. Clean consensus.
+
+---
+
 ## Cross-Agent Consultation
 
-| You are running | Consult these agents |
-|-----------------|---------------------|
-| **Claude** | Codex + Gemini |
-| **Codex** | Claude + Gemini |
-| **Gemini** | Claude + Codex |
+| You are running | Consult these agents | They operate in |
+|-----------------|---------------------|-----------------|
+| **Claude** (orchestrator) | Codex + Gemini | REVIEWER mode |
+| **Codex** (orchestrator) | Claude + Gemini | REVIEWER mode |
+| **Gemini** (orchestrator) | Claude + Codex | REVIEWER mode |
+
+---
+
+## Reviewer Tool Permissions
+
+### What REVIEWERS Can Use
+
+When in REVIEWER_MODE, agents have access to tools for **reading, searching, and verification**:
+
+| Tool Category | Allowed Tools | Purpose |
+|---------------|---------------|---------|
+| **File Reading** | `cat`, `Read`, `head`, `tail` | Understand code context |
+| **Code Search** | `grep`, `Grep`, `rg`, `find`, `Glob` | Find relevant code |
+| **Web Search** | `--search` flag, web search tools | Verify facts, find literature |
+| **Directory Listing** | `ls`, `tree` | Understand project structure |
+| **Sanity Checks** | `python`, `Rscript`, test runners | Verify calculations, run tests |
+
+### What REVIEWERS Cannot Use
+
+REVIEWERS are **forbidden** from using:
+
+| Forbidden | Why |
+|-----------|-----|
+| `codex exec ...`, `codex ...` | Would create recursive loop |
+| `claude ...`, `claude -p ...` | Would create recursive loop |
+| `gemini ...`, `gemini -p ...` | Would create recursive loop |
+| File writes (`Write`, `Edit`, `>`, `>>`) | Reviewers observe, don't modify |
+| `git commit`, `git push` | Reviewers don't make changes |
+
+**Note:** Reviewers CAN run code for verification (sanity checks, tests) but CANNOT invoke other AI agents.
+
+### Reviewer Prompt Template
+
+Always include this header when invoking other agents:
+
+```
+REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex, gemini).
+You MAY read files and web search to verify. Provide YOUR expert review only.
+```
+
+This 2-line header prevents infinite loops while allowing thorough reviews.
+
+---
+
+## Guaranteed REVIEWER_MODE: Wrapper Script
+
+> [!TIP]
+> **Use `scripts/review.sh` to GUARANTEE REVIEWER_MODE is always included.**
+>
+> The wrapper script automatically prepends REVIEWER_MODE to every prompt, eliminating human error.
+
+### Usage
+
+```bash
+# Instead of manually adding REVIEWER_MODE to prompts:
+./scripts/review.sh codex "Review this code for bugs"
+./scripts/review.sh gemini "Validate this analysis plan"
+./scripts/review.sh claude "Check for security issues"
+
+# With options:
+./scripts/review.sh codex "Search for best practices" --search
+./scripts/review.sh codex "Review in context" --cd /path/to/project
+```
+
+### Why Use the Wrapper?
+
+| Manual Prompts | Wrapper Script |
+|----------------|----------------|
+| Must remember to add REVIEWER_MODE | Automatic injection |
+| Risk of forgetting | Guaranteed protection |
+| Copy-paste errors | Consistent format |
+| Verbose commands | Simple interface |
+
+### How It Works
+
+The script prepends this header to EVERY prompt:
+
+```
+REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex, gemini).
+You MAY read files, web search, and run sanity checks. Provide YOUR expert review only.
+```
+
+This makes infinite loops **impossible** when using the wrapper.
+
+---
 
 ## Quick Reference
 
@@ -397,7 +565,10 @@ BE CONCISE. No preamble. Output format:
 2. **Submit to Codex** for critical review:
    ```bash
    codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-     "BE CONCISE. No preamble. Review this plan. Output:
+     "REVIEWER_MODE. You are reviewing for consensus - DO NOT INVOKE OTHER AGENTS.
+You MAY read files and web search. Provide YOUR expert review only.
+
+BE CONCISE. No preamble. Review this plan. Output:
 - ISSUES: [list]
 - MISSING: [list]
 - VERDICT: APPROVED/NEEDS CHANGES
@@ -407,7 +578,10 @@ Plan: [PASTE_PLAN]"
 3. **Submit to Gemini** for independent review:
    ```bash
    gemini --yolo \
-     -p "BE CONCISE. No preamble. Review this plan. Output:
+     -p "REVIEWER_MODE. You are reviewing for consensus - DO NOT INVOKE OTHER AGENTS.
+You MAY read files and web search. Provide YOUR expert review only.
+
+BE CONCISE. No preamble. Review this plan. Output:
 - ISSUES: [list]
 - MISSING: [list]
 - VERDICT: APPROVED/NEEDS CHANGES
@@ -427,9 +601,12 @@ Plan: [PASTE_PLAN]"
 Submit code to both agents for critical review:
 
 ```bash
-# Codex review (concise)
+# Codex review (concise) - REVIEWER_MODE prevents infinite loops
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-  "BE CONCISE. Review code. Output only:
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, gemini).
+You MAY read files and web search to verify. Provide YOUR expert review only.
+
+BE CONCISE. Review code. Output only:
 - BUGS: [list or 'None']
 - SECURITY: [list or 'None']
 - PERFORMANCE: [list or 'None']
@@ -437,9 +614,12 @@ codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
 
 Code: [PASTE_CODE]"
 
-# Gemini review (concise)
+# Gemini review (concise) - REVIEWER_MODE prevents infinite loops
 gemini --yolo \
-  -p "BE CONCISE. Review code. Output only:
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex).
+You MAY read files and web search to verify. Provide YOUR expert review only.
+
+BE CONCISE. Review code. Output only:
 - BUGS: [list or 'None']
 - SECURITY: [list or 'None']
 - PERFORMANCE: [list or 'None']
@@ -498,9 +678,11 @@ All changes require **consensus** between Claude and Pal (Codex/Gemini). Review 
 ```bash
 # Claude reviews independently for P0-P3 issues
 
-# Pal reviews independently (concise)
+# Pal reviews independently (concise) - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-  "BE CONCISE. Code review. Clinical context.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Code review. Clinical context.
 
 Output: P0: [list] | P1: [list] | P2: [list] | P3: [list]
 
@@ -510,15 +692,19 @@ Code: $(cat [MODULE])"
 **Consensus:** Compare findings. For disagreements:
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-  "BE CONCISE. Is [ISSUE] valid? Output: Y/N | REASON"
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+
+BE CONCISE. Is [ISSUE] valid? Output: Y/N | REASON"
 ```
 
 #### 2. Implementation Strategy
 
 ```bash
-# Validate fix plan
+# Validate fix plan - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-  "BE CONCISE. Validate fix plan.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files to verify.
+
+BE CONCISE. Validate fix plan.
 
 Issues: [LIST]
 Fixes: [LIST]
@@ -533,9 +719,12 @@ After implementing fixes, **ALL agents must verify** the fix is correct and ther
 ```bash
 # Claude reviews the fix first, then submits to other agents:
 
-# Codex verification
+# Codex verification - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --search \
-  "BE CONCISE. Verify these fixes are correct and no regressions introduced.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, gemini).
+You MAY read files and web search. Provide YOUR expert verification only.
+
+BE CONCISE. Verify these fixes are correct and no regressions introduced.
 
 Issues fixed: [LIST]
 Code changes: [DIFF or CODE]
@@ -546,17 +735,23 @@ VERDICT: APPROVED / NEEDS_CHANGES
 
 Code: $(cat [MODULE])"
 
-# Gemini verification (independent)
+# Gemini verification (independent) - REVIEWER_MODE
 gemini --yolo \
-  -p "BE CONCISE. Verify fixes are correct. Check for regressions.
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex).
+You MAY read files and web search. Provide YOUR expert verification only.
+
+BE CONCISE. Verify fixes are correct. Check for regressions.
 
 Issues fixed: [LIST]
 Code: $(cat [MODULE])
 
 Output: | Issue | Correct | Regression | VERDICT: APPROVED/REJECTED"
 
-# Claude verification (if Codex/Gemini are primary)
-claude --dangerously-skip-permissions -p "BE CONCISE. Verify fixes. No regressions?
+# Claude verification (if Codex/Gemini are primary) - REVIEWER_MODE
+claude --dangerously-skip-permissions -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (codex, gemini).
+You MAY read files and web search. Provide YOUR expert verification only.
+
+BE CONCISE. Verify fixes. No regressions?
 Issues: [LIST]
 Code: $(cat [MODULE])
 Output: | Issue | Fixed | Regression | VERDICT: APPROVED/REJECTED"
@@ -618,9 +813,11 @@ For clinical research projects requiring publication-ready outputs, follow this 
 For oncology research, you may want to add a cancer type hypothesis step:
 
 ```bash
-# Example only - adapt to your domain
+# Example only - adapt to your domain - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --search \
-  "BE CONCISE. Hypothesize cancer type. Output:
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for PMIDs.
+
+BE CONCISE. Hypothesize cancer type. Output:
 1. [Type] - [confidence] - [evidence] - PMID:X
 Data: [PASTE_DATA_SUMMARY]"
 ```
@@ -652,15 +849,19 @@ See `references/scientific-analysis-workflow.md` Appendix for more domain-specif
 ### Clinical + Scientific Validation
 
 ```bash
-# Clinical assessment (concise)
+# Clinical assessment (concise) - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-  "BE CONCISE. Clinical assessment.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for clinical references.
+
+BE CONCISE. Clinical assessment.
 OUTPUT: ACTIONABLE: Y/N | EFFECT SIZE: meaningful/marginal | GENERALIZABLE: Y/N | VERDICT: [pass/fail]
 Report: [PASTE_REPORT]"
 
-# Scientific assessment (concise)
+# Scientific assessment (concise) - REVIEWER_MODE
 gemini --yolo \
-  -p "BE CONCISE. Scientific assessment.
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for references.
+
+BE CONCISE. Scientific assessment.
 OUTPUT: METHODS: sound/flawed | CONCLUSIONS: supported/unsupported | NOVEL: Y/N | VERDICT: [pass/fail]
 Report: [PASTE_REPORT]"
 ```
@@ -670,17 +871,21 @@ Report: [PASTE_REPORT]"
 **CRITICAL: Verify ALL planned analyses are completed correctly.**
 
 ```bash
-# Check for missing/incomplete analyses (concise output)
+# Check for missing/incomplete analyses (concise output) - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-  "BE CONCISE. Compare analysis/plan.md vs results.
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Compare analysis/plan.md vs results.
 
 OUTPUT (table only):
 | # | Analysis | Status | Action |
 STATUS: ✓=Done ⚠=Partial ✗=Missing ❌=Wrong"
 
-# Gemini verification (concise)
+# Gemini verification (concise) - REVIEWER_MODE
 gemini --yolo \
-  -p "BE CONCISE. Verify: analysis/plan.md vs results. Table only: | # | Analysis | Status |"
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. Verify: analysis/plan.md vs results. Table only: | # | Analysis | Status |"
 ```
 
 After verification, **conduct/correct** all flagged items, then re-validate.
@@ -690,8 +895,11 @@ After verification, **conduct/correct** all flagged items, then re-validate.
 After completing planned analyses:
 
 ```bash
+# REVIEWER_MODE - agent suggests but does not invoke others
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-  "BE CONCISE. What additional analyses needed?
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+BE CONCISE. What additional analyses needed?
 OUTPUT: 1. [analysis] - [rationale]  2. [analysis] - [rationale]
 Current: [PASTE_ANALYSIS]"
 ```
@@ -929,6 +1137,7 @@ This skill includes:
 | `references/gemini-cli.md` | Complete Gemini CLI command reference |
 | `references/scientific-analysis-workflow.md` | Full scientific analysis workflow (750+ lines) |
 | `references/mcp-workflow.md` | MCP integration patterns |
+| `scripts/review.sh` | **GUARANTEED REVIEWER_MODE** - Wrapper that auto-injects REVIEWER_MODE |
 | `scripts/consensus-review.sh` | Helper script for batch consensus reviews |
 
 **Total coverage**: ~2500+ lines of instructions and references.
