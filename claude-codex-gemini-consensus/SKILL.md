@@ -415,6 +415,85 @@ This makes infinite loops **impossible** when using the wrapper.
 
 ---
 
+## Best Practice: Subagent/Task-Based Reviews
+
+> [!IMPORTANT]
+> **Architectural Enforcement > Prompt-Based Enforcement**
+>
+> Instead of relying on REVIEWER_MODE prompts, spawn reviews as **subagents/tasks** with limited tool access. This provides hard enforcement at the system level.
+
+### Why Subagents Are Better
+
+| Approach | Enforcement | Loop Risk |
+|----------|-------------|-----------|
+| CLI with REVIEWER_MODE prompt | Soft (honor system) | Low if followed |
+| Subagent with limited tools | **Hard (architectural)** | **Impossible** |
+
+### Claude Code: Task Tool Pattern
+
+When Claude is the orchestrator, use the **Task tool** to spawn reviewers:
+
+```
+Use the Task tool to spawn a review subagent:
+- subagent_type: "Explore" or "general-purpose"
+- The subagent has Read, Grep, Glob, WebSearch - but NO Bash for CLI invocations
+- Natural termination: subagent completes task and returns
+```
+
+**Example prompt for Task tool:**
+
+```
+Review this code for bugs, security issues, and performance problems.
+
+Code to review:
+[PASTE CODE]
+
+Provide output in this format:
+- BUGS: [list or 'None']
+- SECURITY: [list or 'None']
+- PERFORMANCE: [list or 'None']
+- VERDICT: APPROVED/NEEDS_CHANGES
+```
+
+### Why This Works
+
+```
+USER → ORCHESTRATOR (Claude with Task tool)
+         ├── SUBAGENT (Explore) → Has Read/Search, NO Bash → Cannot invoke CLIs
+         └── SUBAGENT (Explore) → Has Read/Search, NO Bash → Cannot invoke CLIs
+       ← Results returned, synthesized
+```
+
+Subagents **physically cannot** invoke `codex`, `gemini`, or `claude` CLIs because they don't have Bash access.
+
+### When to Use Each Approach
+
+| Scenario | Recommended Approach |
+|----------|---------------------|
+| Claude orchestrating | **Task tool subagents** (architectural enforcement) |
+| Codex orchestrating | CLI with REVIEWER_MODE + wrapper script |
+| Gemini orchestrating | CLI with REVIEWER_MODE + wrapper script |
+| Quick single review | `./scripts/review.sh` wrapper |
+| Complex multi-file review | Task tool with Explore subagent |
+
+### Hybrid Approach (Recommended)
+
+For maximum safety, combine both:
+
+1. **Claude orchestrates** using Task tool (spawns subagents without Bash)
+2. **If CLI needed**, use `scripts/review.sh` wrapper (injects REVIEWER_MODE)
+3. **Subagents** naturally terminate and return results
+
+```bash
+# From Claude orchestrator - spawn review subagent via Task tool
+# Subagent gets: Read, Grep, Glob, WebSearch, WebFetch
+# Subagent does NOT get: Bash (cannot invoke codex/gemini/claude CLIs)
+```
+
+This provides **defense in depth**: architectural limits + prompt-based instructions.
+
+---
+
 ## Quick Reference
 
 ### Claude Code CLI (Full Permissions - Concise Output)
