@@ -45,6 +45,7 @@ ai-skills-update
 | Skill | Description |
 |-------|-------------|
 | [claude-codex-gemini-consensus](claude-codex-gemini-consensus/) | Multi-AI consensus workflow for code review, scientific analysis, and reports |
+| [humanizer](humanizer/) | Remove AI-generated writing patterns from text for natural, human-like output |
 | [prostate-cancer](prostate-cancer/) | Prostate cancer clinical research domain knowledge |
 | [b56-prostate-cancer-programme](b56-prostate-cancer-programme/) | B56 prostate cancer programme specifics |
 

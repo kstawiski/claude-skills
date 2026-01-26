@@ -952,7 +952,102 @@ The final report should follow standard scientific manuscript format without men
 2. [Issue] → [Resolution]
 ```
 
-## Phase 7: Citations
+## Phase 7: Humanization
+
+### CRITICAL: Apply Humanizer to All Reports
+
+**Before finalizing any report, apply the humanizer skill to remove AI-generated writing patterns.**
+
+The humanizer skill (see `humanizer/SKILL.md`) detects and corrects:
+- Inflated symbolism and dramatic metaphors
+- Promotional language and buzzwords
+- Superficial "-ing" analyses
+- Vague attributions ("Some experts believe...")
+- Excessive em dash usage
+- Compulsive rule of three patterns
+- AI-specific vocabulary (delve, crucial, leverage, robust, etc.)
+- Negative parallelisms ("not X, but Y")
+- Conjunctive phrase overuse (Furthermore, Moreover, Additionally)
+
+### Step 7.1: Humanize Report Content
+
+After completing the report, apply humanization:
+
+```bash
+# Humanize the report - REVIEWER_MODE
+codex exec --dangerously-bypass-approvals-and-sandbox \
+  --model gpt-5.2-codex \
+  --skip-git-repo-check \
+  --cd "$(pwd)" \
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+Apply humanizer patterns to this report. Remove AI-generated writing indicators.
+
+DETECT AND FIX:
+1. Inflated symbolism → Use direct language
+2. Promotional buzzwords → Use neutral terms
+3. Vague '-ing' constructions → State directly
+4. Unattributed claims → Cite or rephrase
+5. Excessive em dashes → Reduce to max 1 per paragraph
+6. Rule of three → Vary list lengths
+7. AI vocabulary (delve, crucial, leverage, robust, pivotal, multifaceted) → Use common words
+8. 'Not X, but Y' patterns → Simplify
+9. Furthermore/Moreover/Additionally stacking → Vary transitions
+
+OUTPUT: Humanized version of report preserving technical accuracy.
+
+Report:
+$(cat analysis/report.md)"
+```
+
+### Step 7.2: Independent Humanization Review
+
+```bash
+gemini --yolo \
+  --model gemini-3-pro-preview \
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+Scan this report for remaining AI-generated writing patterns.
+
+CHECK FOR:
+- Inflated metaphors, promotional language
+- AI vocabulary: delve, crucial, leverage, robust, comprehensive, facilitate, pivotal
+- Vague attributions, excessive em dashes
+- Rule of three patterns, 'not X but Y' constructions
+- Conjunctive overuse: Furthermore, Moreover, Additionally
+
+OUTPUT:
+- PATTERNS FOUND: [list with line references or 'None']
+- VERDICT: HUMANIZED / NEEDS MORE WORK
+
+Report:
+$(cat analysis/report.md)"
+```
+
+### Step 7.3: Apply Corrections
+
+For each remaining pattern identified:
+1. Replace with simpler, direct language
+2. Preserve technical accuracy
+3. Maintain scientific rigor
+
+### Humanization Checklist
+
+Before finalizing report.md:
+- [ ] No inflated metaphors or symbolism
+- [ ] No promotional buzzwords (groundbreaking, revolutionary, game-changing)
+- [ ] No vague "-ing" constructions
+- [ ] All claims properly attributed or stated directly
+- [ ] Em dash usage minimal (≤1 pair per paragraph)
+- [ ] List lengths vary (not always three items)
+- [ ] AI vocabulary replaced with common words
+- [ ] No unnecessary "not X, but Y" constructions
+- [ ] Formal transitions used sparingly
+- [ ] Text reads naturally (passes read-aloud test)
+
+---
+
+## Phase 8: Citations
 
 ### PubMed Citation Format
 
@@ -983,6 +1078,24 @@ For each citation:
 Citations:
 [PASTE_CITATIONS_WITH_CONTEXT]"
 ```
+
+---
+
+## Complete Workflow Summary
+
+| Phase | Name | Key Outputs |
+|-------|------|-------------|
+| 1 | Initial Analysis | Data exploration, research question validation |
+| 2 | Analysis Plan Consensus | `analysis/plan.md` (APPROVED) |
+| 3 | Execute Analysis | Implemented analyses with validation |
+| 3.5 | Completeness Verification | All analyses verified complete |
+| 4 | Draft Report | `analysis/report.md` structure |
+| 5 | Figures and Tables | Publication-ready visuals |
+| 6 | Final Validation | Clinical + Scientific assessment |
+| **7** | **Humanization** | **Remove AI writing patterns** |
+| 8 | Citations | Verified PubMed references |
+
+---
 
 ## Quick Reference Commands
 
@@ -1056,6 +1169,18 @@ BE CONCISE. Search [TOPIC]. Output: 1. [finding] PMID:X  2. [finding] PMID:Y"
 - [ ] All citations verified with PMIDs
 - [ ] Limitations appropriately discussed
 - [ ] Code availability documented
+
+### Humanization (MANDATORY)
+- [ ] Humanizer skill applied to report.md
+- [ ] No inflated symbolism or dramatic metaphors
+- [ ] No promotional buzzwords
+- [ ] No vague "-ing" constructions
+- [ ] All claims properly attributed
+- [ ] Em dash usage minimal
+- [ ] AI vocabulary replaced (delve, crucial, leverage, robust, etc.)
+- [ ] No "not X, but Y" overuse
+- [ ] Conjunctive transitions varied
+- [ ] Read-aloud test passed
 
 ---
 
