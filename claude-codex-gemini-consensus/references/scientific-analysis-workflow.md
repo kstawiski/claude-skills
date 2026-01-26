@@ -875,9 +875,15 @@ Output: | Item | Issue | Fix |
 Check: accuracy, clarity, completeness, captions, standards."
 ```
 
-## Phase 6: Final Validation
+## Phase 8: CRITICAL Final Validation (MANDATORY)
 
-### Step 6.1: Clinical Assessment
+> [!CAUTION]
+> **THIS PHASE IS MANDATORY - NO REPORT CAN BE FINALIZED WITHOUT SIGN-OFF FROM ALL THREE MODELS**
+>
+> The report MUST pass clinical AND scientific assessment by Claude, Codex, AND Gemini.
+> This is the core principle of the consensus workflow - all models must approve before completion.
+
+### Step 8.1: Clinical Assessment (Codex)
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
@@ -885,6 +891,8 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 You MAY web search for clinical guidelines and literature.
+
+CRITICAL CLINICAL ASSESSMENT - Your approval is MANDATORY for report finalization.
 
 Assess this analysis from a CLINICAL perspective.
 
@@ -899,16 +907,22 @@ EVALUATE:
 Report:
 [PASTE_FULL_REPORT]
 
-Provide clinical assessment."
+OUTPUT:
+- CLINICAL ASSESSMENT: [detailed evaluation]
+- ISSUES: [list or 'None']
+- VERDICT: APPROVED / REJECTED
+- SIGNATURE: Codex Clinical Review Complete"
 ```
 
-### Step 6.2: Scientific Assessment
+### Step 8.2: Scientific Assessment (Gemini)
 
 ```bash
 gemini --yolo \
   --model gemini-3-pro-preview \
   -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 You MAY web search for literature and methodology references.
+
+CRITICAL SCIENTIFIC ASSESSMENT - Your approval is MANDATORY for report finalization.
 
 Assess this analysis from a SCIENTIFIC perspective.
 
@@ -923,10 +937,42 @@ EVALUATE:
 Report:
 [PASTE_FULL_REPORT]
 
-Provide scientific assessment."
+OUTPUT:
+- SCIENTIFIC ASSESSMENT: [detailed evaluation]
+- ISSUES: [list or 'None']
+- VERDICT: APPROVED / REJECTED
+- SIGNATURE: Gemini Scientific Review Complete"
 ```
 
-### Step 6.3: Final Approval
+### Step 8.3: Final Assessment (Claude)
+
+Claude (as orchestrator) performs final comprehensive review:
+
+1. Review the complete report for consistency and accuracy
+2. Verify all previous feedback has been addressed
+3. Confirm humanization has been applied (no AI writing patterns)
+4. Check all citations are verified
+5. Ensure report meets publication standards
+
+### Step 8.4: Consensus Sign-Off
+
+**ALL THREE MODELS MUST APPROVE:**
+
+| Model | Assessment | Verdict |
+|-------|------------|---------|
+| Codex | Clinical | APPROVED / REJECTED |
+| Gemini | Scientific | APPROVED / REJECTED |
+| Claude | Final Review | APPROVED / REJECTED |
+
+**ONLY proceed to finalization when ALL three verdicts are APPROVED.**
+
+If ANY model returns REJECTED:
+1. Document the issues raised
+2. Address all concerns
+3. Re-submit for validation
+4. Repeat until all models approve
+
+### Step 8.5: Final Approval
 
 Ensure all validations pass before finalizing the report.
 
@@ -937,22 +983,36 @@ The final report should follow standard scientific manuscript format without men
 **Internal tracking only** (do not include in report.md):
 
 ```markdown
-## Internal: Validation Checklist
+## Internal: Final Validation Sign-Off
+
+### Consensus Approval Record
+
+| Model | Assessment Type | Verdict | Date |
+|-------|----------------|---------|------|
+| Codex | Clinical | APPROVED | [date] |
+| Gemini | Scientific | APPROVED | [date] |
+| Claude | Final Review | APPROVED | [date] |
+
+### Validation Checklist
 
 | Aspect | Status |
 |--------|--------|
 | Methods | ✓ Validated |
 | Statistical Analysis | ✓ Validated |
 | Results Interpretation | ✓ Validated |
-| Clinical Validity | ✓ Validated |
-| Scientific Validity | ✓ Validated |
+| Clinical Validity | ✓ Validated (Codex) |
+| Scientific Validity | ✓ Validated (Gemini) |
+| Humanization Applied | ✓ Complete |
+| Citations Verified | ✓ Complete |
 
 ### Issues Identified and Resolved
 1. [Issue] → [Resolution]
 2. [Issue] → [Resolution]
+
+### FINAL STATUS: APPROVED FOR PUBLICATION
 ```
 
-## Phase 7: Humanization
+## Phase 6: Humanization
 
 ### CRITICAL: Apply Humanizer to All Reports
 
@@ -969,7 +1029,7 @@ The humanizer skill (see `humanizer/SKILL.md`) detects and corrects:
 - Negative parallelisms ("not X, but Y")
 - Conjunctive phrase overuse (Furthermore, Moreover, Additionally)
 
-### Step 7.1: Humanize Report Content
+### Step 6.1: Humanize Report Content
 
 After completing the report, apply humanization:
 
@@ -1000,7 +1060,7 @@ Report:
 $(cat analysis/report.md)"
 ```
 
-### Step 7.2: Independent Humanization Review
+### Step 6.2: Independent Humanization Review
 
 ```bash
 gemini --yolo \
@@ -1024,7 +1084,7 @@ Report:
 $(cat analysis/report.md)"
 ```
 
-### Step 7.3: Apply Corrections
+### Step 6.3: Apply Corrections
 
 For each remaining pattern identified:
 1. Replace with simpler, direct language
@@ -1047,7 +1107,7 @@ Before finalizing report.md:
 
 ---
 
-## Phase 8: Citations
+## Phase 7: Citations
 
 ### PubMed Citation Format
 
@@ -1091,9 +1151,9 @@ Citations:
 | 3.5 | Completeness Verification | All analyses verified complete |
 | 4 | Draft Report | `analysis/report.md` structure |
 | 5 | Figures and Tables | Publication-ready visuals |
-| 6 | Final Validation | Clinical + Scientific assessment |
-| **7** | **Humanization** | **Remove AI writing patterns** |
-| 8 | Citations | Verified PubMed references |
+| 6 | Humanization | Remove AI writing patterns |
+| 7 | Citations | Verified PubMed references |
+| **8** | **CRITICAL: Final Validation** | **Clinical + Scientific assessment by ALL models - MANDATORY SIGN-OFF** |
 
 ---
 
