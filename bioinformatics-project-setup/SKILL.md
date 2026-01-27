@@ -45,11 +45,9 @@ project_root/
 ├── CLAUDE.md                  # Agent instructions (enforces structure)
 ├── AGENTS.md -> CLAUDE.md     # Symlink for multi-agent compatibility
 │
-├── data_bucket/               # Mounted raw data (READ-ONLY)
-│   ├── bam/                   # Aligned reads
-│   ├── fastq/                 # Raw sequencing reads
-│   ├── dicom/                 # Medical imaging (if applicable)
-│   └── ...                    # Other raw data formats (vcf, cram, etc.)
+├── data_bucket/               # Mount point for cloud storage (READ-ONLY)
+│                              # Contents come from mounted bucket (bam/, fastq/, etc.)
+│                              # Must be empty before mounting
 │
 ├── metadata/                  # Study metadata and documentation
 │   ├── sample_sheet.csv       # Sample manifest

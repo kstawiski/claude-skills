@@ -22,7 +22,8 @@ mkdir -p "$PROJECT_DIR"
 cd "$PROJECT_DIR"
 
 # --- Data bucket (mount point for cloud storage) ---
-mkdir -p data_bucket/{bam,fastq,dicom}
+# Create empty directory only — must remain empty for mounting (gcsfuse, s3fs, etc.)
+mkdir -p data_bucket
 
 # --- Metadata ---
 mkdir -p metadata/{clinical_data,technical_reports,methodology}
