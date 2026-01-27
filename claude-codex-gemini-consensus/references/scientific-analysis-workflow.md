@@ -875,9 +875,15 @@ Output: | Item | Issue | Fix |
 Check: accuracy, clarity, completeness, captions, standards."
 ```
 
-## Phase 6: Final Validation
+## Phase 8: CRITICAL Final Validation (MANDATORY)
 
-### Step 6.1: Clinical Assessment
+> [!CAUTION]
+> **THIS PHASE IS MANDATORY - NO REPORT CAN BE FINALIZED WITHOUT SIGN-OFF FROM ALL THREE MODELS**
+>
+> The report MUST pass clinical AND scientific assessment by Claude, Codex, AND Gemini.
+> This is the core principle of the consensus workflow - all models must approve before completion.
+
+### Step 8.1: Clinical Assessment (Codex)
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
@@ -885,6 +891,8 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 You MAY web search for clinical guidelines and literature.
+
+CRITICAL CLINICAL ASSESSMENT - Your approval is MANDATORY for report finalization.
 
 Assess this analysis from a CLINICAL perspective.
 
@@ -899,16 +907,22 @@ EVALUATE:
 Report:
 [PASTE_FULL_REPORT]
 
-Provide clinical assessment."
+OUTPUT:
+- CLINICAL ASSESSMENT: [detailed evaluation]
+- ISSUES: [list or 'None']
+- VERDICT: APPROVED / REJECTED
+- SIGNATURE: Codex Clinical Review Complete"
 ```
 
-### Step 6.2: Scientific Assessment
+### Step 8.2: Scientific Assessment (Gemini)
 
 ```bash
 gemini --yolo \
   --model gemini-3-pro-preview \
   -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 You MAY web search for literature and methodology references.
+
+CRITICAL SCIENTIFIC ASSESSMENT - Your approval is MANDATORY for report finalization.
 
 Assess this analysis from a SCIENTIFIC perspective.
 
@@ -923,10 +937,42 @@ EVALUATE:
 Report:
 [PASTE_FULL_REPORT]
 
-Provide scientific assessment."
+OUTPUT:
+- SCIENTIFIC ASSESSMENT: [detailed evaluation]
+- ISSUES: [list or 'None']
+- VERDICT: APPROVED / REJECTED
+- SIGNATURE: Gemini Scientific Review Complete"
 ```
 
-### Step 6.3: Final Approval
+### Step 8.3: Final Assessment (Claude)
+
+Claude (as orchestrator) performs final comprehensive review:
+
+1. Review the complete report for consistency and accuracy
+2. Verify all previous feedback has been addressed
+3. Confirm humanization has been applied (no AI writing patterns)
+4. Check all citations are verified
+5. Ensure report meets publication standards
+
+### Step 8.4: Consensus Sign-Off
+
+**ALL THREE MODELS MUST APPROVE:**
+
+| Model | Assessment | Verdict |
+|-------|------------|---------|
+| Codex | Clinical | APPROVED / REJECTED |
+| Gemini | Scientific | APPROVED / REJECTED |
+| Claude | Final Review | APPROVED / REJECTED |
+
+**ONLY proceed to finalization when ALL three verdicts are APPROVED.**
+
+If ANY model returns REJECTED:
+1. Document the issues raised
+2. Address all concerns
+3. Re-submit for validation
+4. Repeat until all models approve
+
+### Step 8.5: Final Approval
 
 Ensure all validations pass before finalizing the report.
 
@@ -937,20 +983,129 @@ The final report should follow standard scientific manuscript format without men
 **Internal tracking only** (do not include in report.md):
 
 ```markdown
-## Internal: Validation Checklist
+## Internal: Final Validation Sign-Off
+
+### Consensus Approval Record
+
+| Model | Assessment Type | Verdict | Date |
+|-------|----------------|---------|------|
+| Codex | Clinical | APPROVED | [date] |
+| Gemini | Scientific | APPROVED | [date] |
+| Claude | Final Review | APPROVED | [date] |
+
+### Validation Checklist
 
 | Aspect | Status |
 |--------|--------|
 | Methods | ✓ Validated |
 | Statistical Analysis | ✓ Validated |
 | Results Interpretation | ✓ Validated |
-| Clinical Validity | ✓ Validated |
-| Scientific Validity | ✓ Validated |
+| Clinical Validity | ✓ Validated (Codex) |
+| Scientific Validity | ✓ Validated (Gemini) |
+| Humanization Applied | ✓ Complete |
+| Citations Verified | ✓ Complete |
 
 ### Issues Identified and Resolved
 1. [Issue] → [Resolution]
 2. [Issue] → [Resolution]
+
+### FINAL STATUS: APPROVED FOR PUBLICATION
 ```
+
+## Phase 6: Humanization
+
+### CRITICAL: Apply Humanizer to All Reports
+
+**Before finalizing any report, apply the humanizer skill to remove AI-generated writing patterns.**
+
+The humanizer skill (see `humanizer/SKILL.md`) detects and corrects:
+- Inflated symbolism and dramatic metaphors
+- Promotional language and buzzwords
+- Superficial "-ing" analyses
+- Vague attributions ("Some experts believe...")
+- Excessive em dash usage
+- Compulsive rule of three patterns
+- AI-specific vocabulary (delve, crucial, leverage, robust, etc.)
+- Negative parallelisms ("not X, but Y")
+- Conjunctive phrase overuse (Furthermore, Moreover, Additionally)
+
+### Step 6.1: Humanize Report Content
+
+After completing the report, apply humanization:
+
+```bash
+# Humanize the report - REVIEWER_MODE
+codex exec --dangerously-bypass-approvals-and-sandbox \
+  --model gpt-5.2-codex \
+  --skip-git-repo-check \
+  --cd "$(pwd)" \
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+Apply humanizer patterns to this report. Remove AI-generated writing indicators.
+
+DETECT AND FIX:
+1. Inflated symbolism → Use direct language
+2. Promotional buzzwords → Use neutral terms
+3. Vague '-ing' constructions → State directly
+4. Unattributed claims → Cite or rephrase
+5. Excessive em dashes → Reduce to max 1 per paragraph
+6. Rule of three → Vary list lengths
+7. AI vocabulary (delve, crucial, leverage, robust, pivotal, multifaceted) → Use common words
+8. 'Not X, but Y' patterns → Simplify
+9. Furthermore/Moreover/Additionally stacking → Vary transitions
+
+OUTPUT: Humanized version of report preserving technical accuracy.
+
+Report:
+$(cat analysis/report.md)"
+```
+
+### Step 6.2: Independent Humanization Review
+
+```bash
+gemini --yolo \
+  --model gemini-3-pro-preview \
+  -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
+
+Scan this report for remaining AI-generated writing patterns.
+
+CHECK FOR:
+- Inflated metaphors, promotional language
+- AI vocabulary: delve, crucial, leverage, robust, comprehensive, facilitate, pivotal
+- Vague attributions, excessive em dashes
+- Rule of three patterns, 'not X but Y' constructions
+- Conjunctive overuse: Furthermore, Moreover, Additionally
+
+OUTPUT:
+- PATTERNS FOUND: [list with line references or 'None']
+- VERDICT: HUMANIZED / NEEDS MORE WORK
+
+Report:
+$(cat analysis/report.md)"
+```
+
+### Step 6.3: Apply Corrections
+
+For each remaining pattern identified:
+1. Replace with simpler, direct language
+2. Preserve technical accuracy
+3. Maintain scientific rigor
+
+### Humanization Checklist
+
+Before finalizing report.md:
+- [ ] No inflated metaphors or symbolism
+- [ ] No promotional buzzwords (groundbreaking, revolutionary, game-changing)
+- [ ] No vague "-ing" constructions
+- [ ] All claims properly attributed or stated directly
+- [ ] Em dash usage minimal (≤1 pair per paragraph)
+- [ ] List lengths vary (not always three items)
+- [ ] AI vocabulary replaced with common words
+- [ ] No unnecessary "not X, but Y" constructions
+- [ ] Formal transitions used sparingly
+- [ ] Text reads naturally (passes read-aloud test)
+
+---
 
 ## Phase 7: Citations
 
@@ -983,6 +1138,24 @@ For each citation:
 Citations:
 [PASTE_CITATIONS_WITH_CONTEXT]"
 ```
+
+---
+
+## Complete Workflow Summary
+
+| Phase | Name | Key Outputs |
+|-------|------|-------------|
+| 1 | Initial Analysis | Data exploration, research question validation |
+| 2 | Analysis Plan Consensus | `analysis/plan.md` (APPROVED) |
+| 3 | Execute Analysis | Implemented analyses with validation |
+| 3.5 | Completeness Verification | All analyses verified complete |
+| 4 | Draft Report | `analysis/report.md` structure |
+| 5 | Figures and Tables | Publication-ready visuals |
+| 6 | Humanization | Remove AI writing patterns |
+| 7 | Citations | Verified PubMed references |
+| **8** | **CRITICAL: Final Validation** | **Clinical + Scientific assessment by ALL models - MANDATORY SIGN-OFF** |
+
+---
 
 ## Quick Reference Commands
 
@@ -1056,6 +1229,18 @@ BE CONCISE. Search [TOPIC]. Output: 1. [finding] PMID:X  2. [finding] PMID:Y"
 - [ ] All citations verified with PMIDs
 - [ ] Limitations appropriately discussed
 - [ ] Code availability documented
+
+### Humanization (MANDATORY)
+- [ ] Humanizer skill applied to report.md
+- [ ] No inflated symbolism or dramatic metaphors
+- [ ] No promotional buzzwords
+- [ ] No vague "-ing" constructions
+- [ ] All claims properly attributed
+- [ ] Em dash usage minimal
+- [ ] AI vocabulary replaced (delve, crucial, leverage, robust, etc.)
+- [ ] No "not X, but Y" overuse
+- [ ] Conjunctive transitions varied
+- [ ] Read-aloud test passed
 
 ---
 

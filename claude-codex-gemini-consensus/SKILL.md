@@ -122,8 +122,9 @@ CLAUDE WILL:
 6. [CORRECT] Fix any issues, re-validate with all agents
 7. [REPORT] Generate analysis/report.md (Methods, Results, Discussion)
 8. [FIGURES] Create publication-ready figures with captions
-9. [CITATIONS] Add and verify PubMed references
-10. [FINAL] Clinical + Scientific assessment by all models
+9. [HUMANIZE] Apply humanizer skill to remove AI writing patterns
+10. [CITATIONS] Add and verify PubMed references
+11. [CRITICAL FINAL REVIEW] **Clinical AND Scientific assessment by ALL models - MANDATORY SIGN-OFF FROM CLAUDE + CODEX + GEMINI BEFORE COMPLETION**
 ```
 
 ### What This Skill Does Automatically
@@ -882,8 +883,9 @@ For clinical research projects requiring publication-ready outputs, follow this 
 5. **Conduct Corrections** → Implement missing, complete incomplete, fix wrong analyses
 6. **Draft Report** → Create `analysis/report.md` with Methods, Results, Discussion
 7. **Figures & Tables** → Publication-ready with complete captions (standalone scripts)
-8. **Final Validation** → Clinical AND scientific assessment by all models
+8. **Humanization** → Apply humanizer skill to remove AI writing patterns (see `humanizer/SKILL.md`)
 9. **Citations** → Verify all PubMed citations (PMIDs)
+10. **CRITICAL: Final Validation** → **Clinical AND Scientific assessment by ALL models (Claude + Codex + Gemini) - MANDATORY SIGN-OFF**
 
 **See [references/scientific-analysis-workflow.md](references/scientific-analysis-workflow.md) for complete workflow.**
 
@@ -1219,6 +1221,12 @@ This skill includes:
 | `scripts/review.sh` | **GUARANTEED REVIEWER_MODE** - Wrapper that auto-injects REVIEWER_MODE |
 | `scripts/consensus-review.sh` | Helper script for batch consensus reviews |
 
+**Related Skills:**
+
+| Skill | Purpose |
+|-------|---------|
+| `humanizer/SKILL.md` | **MANDATORY for reports** - Remove AI writing patterns from generated text |
+
 **Total coverage**: ~2500+ lines of instructions and references.
 
 ---
@@ -1231,6 +1239,7 @@ This skill includes:
 | **Analysis Planning** | Data description | Approved plan | analysis/plan.md |
 | **Analysis Execution** | plan.md | Results + validation | Status markers ✓/⚠/✗/❌ |
 | **Report Generation** | Analysis results | Publication-ready report | analysis/report.md |
+| **Humanization** | Any generated text | Natural, human-like text | Humanizer checklist |
 
 ---
 
