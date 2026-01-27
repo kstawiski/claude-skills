@@ -1,0 +1,150 @@
+# Project: {{STUDY_TITLE}}
+
+> **Setup date:** {{SETUP_DATE}}
+> **Project root:** {{PROJECT_DIR}}
+
+---
+
+## MANDATORY: Directory Structure Rules
+
+This project follows a strict bioinformatics directory structure. ALL agents (Claude, Codex, Gemini) MUST comply with these rules. Violations will produce unusable results.
+
+### Directory Layout
+
+```
+{{PROJECT_DIR}}/
+├── CLAUDE.md              ← YOU ARE HERE (agent instructions)
+├── AGENTS.md              ← Symlink to CLAUDE.md
+├── data_bucket/           ← MOUNTED RAW DATA — READ-ONLY
+├── metadata/              ← Study metadata, clinical data, SOPs
+├── plan/                  ← Analysis plans (consensus-reviewed)
+├── analysis/              ← Active analysis workspace
+├── results/               ← SHAREABLE outputs only
+│   ├── tables/
+│   ├── figures/
+│   ├── reports/
+│   └── supplementary/
+├── code/                  ← ALL code (git-tracked)
+│   ├── pipelines/
+│   ├── scripts/
+│   ├── configs/
+│   ├── envs/
+│   └── notebooks/
+├── work/                  ← Nextflow work dir (disposable)
+└── temp/                  ← Temporary files (disposable)
+```
+
+### ABSOLUTE RULES — DO NOT VIOLATE
+
+1. **data_bucket/ is READ-ONLY.** Never write to it. It is a mounted cloud storage bucket (GCS, S3, Wasabi, or Hyperstack). Treat all contents as immutable input data.
+
+2. **ALL code goes in code/.** Every script, pipeline, config file, notebook, and environment definition belongs in `code/`. No exceptions. No scripts scattered in `analysis/` or project root.
+
+3. **results/ is collaborator-facing.** It must contain ONLY:
+   - Final tables (CSV, TSV, Excel) in `results/tables/`
+   - Publication-ready figures (PNG, PDF, SVG) in `results/figures/`
+   - Analysis reports (HTML, PDF) in `results/reports/`
+   - Supplementary materials in `results/supplementary/`
+
+   It must NEVER contain:
+   - Source code or scripts
+   - CLAUDE.md, AGENTS.md, or any agent config
+   - Raw data or intermediate files
+   - Log files
+   - Git metadata
+
+4. **Temporary files go in work/ or temp/.** Nextflow `-work-dir` must point to `work/`. All other intermediate/temporary files go in `temp/`. These directories are disposable and may be cleaned at any time.
+
+5. **code/ is the git repository.** It is initialized with git. All version control happens there. The project root is NOT a git repository.
+
+6. **plan/ holds the analysis plan.** The analysis plan in `plan/plan.md` should be created and reviewed using the consensus workflow before execution begins. Copy or symlink to `analysis/plan.md` for execution tracking.
+
+### Reference Files
+
+**Reference directory: `{{REF_DIR}}`**
+
+When you need reference files (genome FASTA, GTF annotations, aligner indices, dbSNP, iGenomes, etc.):
+
+1. **FIRST** check if the file already exists in `{{REF_DIR}}`:
+   ```bash
+   ls {{REF_DIR}}/genomes/
+   ls {{REF_DIR}}/annotations/
+   ls {{REF_DIR}}/indices/
+   ls {{REF_DIR}}/iGenomes/
+   ```
+
+2. **IF IT EXISTS** — use it directly. Symlink into the project if a pipeline requires a local path:
+   ```bash
+   ln -s {{REF_DIR}}/genomes/GRCh38/genome.fa analysis/reference.fa
+   ```
+
+3. **IF IT DOES NOT EXIST** — download it to `{{REF_DIR}}`, NOT to the project directory:
+   ```bash
+   # Example: download GRCh38 to the shared reference directory
+   wget -P {{REF_DIR}}/genomes/GRCh38/ https://...genome.fa
+   ```
+
+4. **DOCUMENT** any new downloads by appending to `{{REF_DIR}}/README.md`.
+
+**NEVER download reference files into the project directory.** They belong in the shared reference directory so other projects can reuse them.
+
+### Pipeline Execution Rules
+
+When running Nextflow, Snakemake, or other workflow managers:
+
+```bash
+# Nextflow — use work/ as the work directory
+nextflow run code/pipelines/main.nf \
+    -work-dir work/ \
+    --outdir analysis/ \
+    -c code/configs/pipeline.config
+
+# Snakemake — use temp/ for temporary files
+snakemake --cores 8 \
+    --directory analysis/ \
+    --configfile code/configs/config.yaml
+```
+
+- Pipeline definitions: `code/pipelines/`
+- Pipeline configs: `code/configs/`
+- Pipeline outputs: `analysis/` (working) → `results/` (final)
+- Pipeline work dirs: `work/` (Nextflow) or `temp/` (other)
+
+### File Placement Quick Reference
+
+| You are creating... | Put it in... |
+|---------------------|-------------|
+| A Python/R/bash script | `code/scripts/` |
+| A Nextflow/Snakemake pipeline | `code/pipelines/` |
+| A pipeline config file | `code/configs/` |
+| A conda environment YAML | `code/envs/` |
+| A Jupyter notebook | `code/notebooks/` |
+| QC output (FastQC, MultiQC) | `analysis/qc/` |
+| Alignment files | `analysis/alignment/` |
+| Variant calls | `analysis/variant_calling/` |
+| A final summary table | `results/tables/` |
+| A publication figure | `results/figures/` |
+| An HTML/PDF report | `results/reports/` |
+| A sample sheet or clinical data | `metadata/` |
+| An analysis plan | `plan/plan.md` |
+| Nextflow work directory | `work/` |
+| Any temporary file | `temp/` |
+| A reference genome | `{{REF_DIR}}/genomes/` |
+| A GTF/BED annotation | `{{REF_DIR}}/annotations/` |
+
+### Analysis Workflow
+
+1. **Plan**: Create/edit `plan/plan.md` → review with consensus skill
+2. **Execute**: Run pipelines from `code/`, outputs to `analysis/`
+3. **QC**: Verify quality at each checkpoint in the plan
+4. **Finalize**: Copy/generate final outputs to `results/`
+5. **Report**: Generate reports in `results/reports/`
+6. **Share**: Give collaborators access to `results/` and `metadata/`
+
+### Metadata
+
+Store all study metadata in `metadata/`:
+- `metadata/sample_sheet.csv` — sample manifest (sample ID, group, file paths)
+- `metadata/clinical_data/` — clinical or phenotype data
+- `metadata/technical_reports/` — sequencing facility QC, lab reports
+- `metadata/methodology/` — experimental protocols, SOPs
