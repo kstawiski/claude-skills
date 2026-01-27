@@ -22,23 +22,23 @@ mkdir -p "$PROJECT_DIR"
 cd "$PROJECT_DIR"
 
 # --- Data bucket (mount point for cloud storage) ---
-# Create empty directory only — must remain empty for mounting (gcsfuse, s3fs, etc.)
+# Must remain empty for mounting (gcsfuse, s3fs, etc.)
 mkdir -p data_bucket
 
 # --- Metadata ---
-mkdir -p metadata/{clinical_data,technical_reports,methodology}
+mkdir -p metadata
 
 # --- Planning ---
 mkdir -p plan
 
 # --- Analysis workspace ---
-mkdir -p analysis/{qc,alignment,variant_calling,expression,differential,integration}
+mkdir -p analysis
 
-# --- Results (shareable, no code/technical files) ---
-mkdir -p results/{tables,figures,reports,supplementary}
+# --- Results (shareable, collaborator-facing) ---
+mkdir -p results
 
 # --- Code (git-tracked) ---
-mkdir -p code/{pipelines,scripts,configs,envs,notebooks}
+mkdir -p code
 
 # --- Temporary / work directories ---
 mkdir -p work
@@ -46,36 +46,11 @@ mkdir -p temp
 
 # --- Reference directory (shared across projects) ---
 if [ ! -d "$REF_DIR" ]; then
-    echo "Reference directory $REF_DIR does not exist."
-    echo "Creating it now..."
-    mkdir -p "$REF_DIR"/{genomes/{GRCh38,GRCh37,mm10},annotations/{gtf,bed,dbsnp},iGenomes,indices/{bwa,star,hisat2,bowtie2}}
-    cat > "$REF_DIR/README.md" << 'REFEOF'
-# Reference Files
-
-Shared reference genomes, annotations, and aligner indices.
-
-## Structure
-
-- `genomes/` — Reference genome FASTA files and their indices
-- `annotations/` — GTF, BED, dbSNP, and other annotation files
-- `iGenomes/` — Illumina iGenomes collections
-- `indices/` — Pre-built aligner indices (BWA, STAR, HISAT2, Bowtie2)
-
-## Usage
-
-Projects should check this directory before downloading reference files.
-If a needed reference is not present, download it here (not into the project).
-
-## Download Log
-
-| Date | File | Source | Downloaded By |
-|------|------|--------|---------------|
-REFEOF
+    echo "Reference directory $REF_DIR does not exist. Creating..."
+    mkdir -p "$REF_DIR"
     echo "Reference directory created at $REF_DIR"
 else
     echo "Reference directory exists at $REF_DIR"
-    echo "Contents:"
-    ls "$REF_DIR/" 2>/dev/null || echo "  (empty)"
 fi
 
 # --- Generate CLAUDE.md from template ---
@@ -94,12 +69,13 @@ else
     cat > CLAUDE.md << MINEOF
 # Project: $STUDY_TITLE
 
-See bioinformatics-project-setup SKILL.md for full directory structure documentation.
+See bioinformatics-project-setup SKILL.md for full documentation.
 
 ## Key Rules
-- Raw data in data_bucket/ is READ-ONLY
+- data_bucket/ is READ-ONLY (mounted cloud storage)
 - All code goes in code/ (git-tracked)
 - Shareable results go in results/ (no code, no CLAUDE.md)
+- plan/ and analysis/ follow consensus skill workflow
 - Reference files: check $REF_DIR first, download there if missing
 - Temporary files go in work/ or temp/
 MINEOF
@@ -109,41 +85,22 @@ fi
 ln -sf CLAUDE.md AGENTS.md
 echo "Created AGENTS.md -> CLAUDE.md symlink"
 
-# --- Root .gitignore (excludes everything except code/) ---
+# --- Root .gitignore ---
 cat > .gitignore << 'GIEOF'
-# Bioinformatics project root .gitignore
-# Only code/ is git-tracked; everything else is excluded
-
-# Raw data (mounted cloud storage)
+# Only code/ is git-tracked via its own repo
 data_bucket/
-
-# Analysis workspace (large intermediate files)
 analysis/
-
-# Results (shared separately, not via git)
 results/
-
-# Metadata (may contain PHI/sensitive data)
 metadata/
-
-# Planning docs (tracked in code/ if needed)
 plan/
-
-# Temporary and work directories
 work/
 temp/
 .nextflow/
 .nextflow.log*
-
-# Agent config (project-specific, not shared)
 CLAUDE.md
 AGENTS.md
-
-# OS files
 .DS_Store
 Thumbs.db
-
-# Environment
 .env
 *.log
 GIEOF
@@ -153,9 +110,8 @@ echo "Created root .gitignore"
 if [ ! -d code/.git ]; then
     cd code
     git init
-    cat > .gitignore << 'CODEGI'
-# Code directory .gitignore
 
+    cat > .gitignore << 'CODEGI'
 # Environment and secrets
 .env
 *.log
@@ -191,7 +147,7 @@ work/
 .DS_Store
 Thumbs.db
 
-# Large files (use git-lfs or don't track)
+# Large data files (should not be in code/)
 *.bam
 *.bai
 *.cram
@@ -215,30 +171,12 @@ Thumbs.db
 *.RData
 CODEGI
 
-    # Initial README in code/
     cat > README.md << CREADME
 # $STUDY_TITLE — Code
 
 All scripts, pipelines, and configuration files for this analysis.
 
-## Structure
-
-- \`pipelines/\` — Nextflow/Snakemake/WDL pipeline definitions
-- \`scripts/\` — Analysis scripts (R, Python, bash)
-- \`configs/\` — Pipeline configuration and parameter files
-- \`envs/\` — Conda environment YAML / container definitions
-- \`notebooks/\` — Jupyter / R notebooks
-
-## Reproducibility
-
-This repository contains everything needed to reproduce the analysis.
-Raw data and reference files are not included — see the project CLAUDE.md
-for directory structure and data locations.
-
-## Reference Files
-
-Reference genomes and annotations are stored in: \`$REF_DIR\`
-Check there before downloading any reference files.
+Reference files: \`$REF_DIR\`
 CREADME
 
     git add -A
@@ -266,48 +204,33 @@ cat > plan/plan.md << 'PLANEOF'
 
 ## Data Description
 
-- **Data type**: WGS / WES / RNA-seq / scRNA-seq / ATAC-seq / Other
-- **Organism**: Human (GRCh38) / Mouse (mm10) / Other
+- **Data type**: [WGS / WES / RNA-seq / scRNA-seq / DICOM / Other]
+- **Organism**: [Human / Mouse / Other]
 - **Samples**: [N samples, groups, conditions]
 - **Data location**: `data_bucket/`
-- **Format**: FASTQ / BAM / CRAM / VCF / Other
 
 ## Reference Files Required
 
-- [ ] Reference genome: [build]
-- [ ] Gene annotations: [GTF version]
-- [ ] Known variants: [dbSNP version]
-- [ ] Target regions: [capture kit BED]
-- [ ] Other: [specify]
+- [ ] [List reference files needed — check ref directory first]
 
 ## Planned Analyses
 
-### 1. Quality Control
-- **Tool**: FastQC, MultiQC
-- **Input**: `data_bucket/fastq/`
-- **Output**: `analysis/qc/`
-- **Status**: ☐ Not started
-
-### 2. [Next Analysis Step]
-- **Tool**: [tool name and version]
-- **Input**: [input location]
-- **Output**: [output location]
+### 1. [Analysis Step]
+- **Objective**: [what this answers]
+- **Method**: [tool/approach]
+- **Input**: [input data]
+- **Expected output**: [tables, figures, files]
 - **Status**: ☐ Not started
 
 ## Deliverables
 
 | Deliverable | Format | Location |
 |-------------|--------|----------|
-| QC report | HTML | `results/reports/` |
-| Sample summary table | CSV | `results/tables/` |
-| [Other] | [format] | `results/[subdir]/` |
+| [Output] | [format] | `results/` |
 
 ## Quality Control Checkpoints
 
-- [ ] Raw data QC passed
-- [ ] Alignment QC passed (mapping rate, coverage)
-- [ ] Analysis-specific QC passed
-- [ ] Results reviewed by PI / collaborator
+- [ ] [Define QC checkpoints for this project]
 
 ## Review Notes
 
@@ -319,25 +242,15 @@ echo "Created plan/plan.md template"
 echo ""
 echo "=== Setup Complete ==="
 echo ""
-echo "Project structure:"
 echo "  $PROJECT_DIR/"
-echo "  ├── CLAUDE.md              (agent instructions)"
-echo "  ├── AGENTS.md -> CLAUDE.md"
-echo "  ├── data_bucket/           (mount cloud storage here)"
-echo "  ├── metadata/              (sample sheets, clinical data)"
-echo "  ├── plan/plan.md           (analysis plan template)"
-echo "  ├── analysis/              (working analysis space)"
-echo "  ├── results/               (shareable outputs)"
-echo "  ├── code/                  (git-tracked, initialized)"
-echo "  ├── work/                  (nextflow work dir)"
-echo "  └── temp/                  (temporary files)"
-echo ""
-echo "Next steps:"
-echo "  1. Mount data to data_bucket/"
-echo "  2. Add sample metadata to metadata/"
-echo "  3. Edit plan/plan.md with your analysis plan"
-echo "  4. Use consensus skill to review the plan"
-echo "  5. Start analysis in analysis/ using code from code/"
-echo "  6. Place final outputs in results/"
+echo "  ├── CLAUDE.md / AGENTS.md"
+echo "  ├── data_bucket/    (mount cloud storage here)"
+echo "  ├── metadata/"
+echo "  ├── plan/plan.md    (analysis plan template)"
+echo "  ├── analysis/"
+echo "  ├── results/"
+echo "  ├── code/           (git initialized)"
+echo "  ├── work/"
+echo "  └── temp/"
 echo ""
 echo "Reference files: $REF_DIR"
