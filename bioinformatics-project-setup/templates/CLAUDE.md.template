@@ -1,0 +1,93 @@
+# Project: {{STUDY_TITLE}}
+
+> Setup date: {{SETUP_DATE}} | Reference directory: `{{REF_DIR}}`
+
+---
+
+## Directory Structure
+
+```
+├── CLAUDE.md / AGENTS.md      ← Agent instructions (this file)
+├── data_bucket/               ← Mounted cloud storage — READ-ONLY
+├── metadata/                  ← Sample metadata, clinical data, SOPs
+├── plan/                      ← Analysis plans (consensus-reviewed)
+├── analysis/                  ← Active analysis workspace
+├── results/                   ← Shareable final outputs ONLY
+├── code/                      ← All code (git-tracked)
+├── work/                      ← Pipeline work dirs (disposable)
+└── temp/                      ← Temporary files (disposable)
+```
+
+## Rules
+
+### data_bucket/ — READ-ONLY mount point
+
+Cloud storage mount (GCS / S3 / Wasabi / Hyperstack). Contains raw input data. **Never write to this directory.** It must be empty before mounting — do not create files or subdirectories inside it.
+
+### plan/ and analysis/ — consensus workflow
+
+Use the `claude-codex-gemini-consensus` skill for planning and analysis:
+
+1. **Plan** in `plan/plan.md` — draft analysis plan, review with consensus workflow, mark APPROVED before execution
+2. **Execute** in `analysis/` — copy approved plan to `analysis/plan.md`, update status checkboxes (☐ → ☑) as each step completes
+3. **Report** in `analysis/report.md` — Methods, Results, Discussion after completion
+
+Create subdirectories inside `analysis/` as needed by the analysis (e.g., `qc/`, `alignment/`, `figures/`, `tables/`). There is no enforced internal structure — organize based on what the project requires.
+
+### code/ — git repository
+
+**All code lives here.** Scripts, pipelines (Nextflow, Snakemake, WDL), configuration files, environment definitions (conda YAML, Dockerfiles), notebooks — everything needed to review methodology and recreate the analysis.
+
+This is the only directory tracked with git. Do not scatter scripts in `analysis/` or the project root.
+
+### results/ — collaborator-facing outputs
+
+Final deliverables only: tables, figures, reports, supplementary materials. Structure subdirectories as needed (`tables/`, `figures/`, `reports/`, etc.).
+
+**Do not put in results/:** source code, scripts, CLAUDE.md, AGENTS.md, log files, intermediate data, git metadata, or any technical/agent files.
+
+### work/ and temp/ — disposable
+
+- `work/` — Pipeline work directories (use as Nextflow `-work-dir`, Snakemake temp, etc.)
+- `temp/` — Any other intermediate or scratch files
+
+These can be deleted at any time without losing anything important.
+
+### metadata/ — study documentation
+
+Sample sheets, clinical/phenotype data, technical reports from sequencing facilities, experimental protocols, SOPs, and any other study documentation.
+
+### Reference files
+
+**Reference directory: `{{REF_DIR}}`**
+
+When you need reference files (genomes, annotations, aligner indices, iGenomes, or any other shared reference data):
+
+1. **Check first** — look in `{{REF_DIR}}` to see if the file already exists:
+   ```bash
+   ls {{REF_DIR}}/
+   find {{REF_DIR}} -name "*.fa" -o -name "*.gtf" -o -name "*.bed" 2>/dev/null
+   ```
+2. **Reuse** if found. Symlink into the project if a pipeline requires a local path.
+3. **Download to `{{REF_DIR}}`** if missing — never download reference files into the project directory.
+
+This avoids duplicating large files across projects.
+
+## Quick Reference
+
+| You are creating... | Put it in... |
+|---------------------|-------------|
+| A script (Python, R, bash) | `code/` |
+| A pipeline (Nextflow, Snakemake) | `code/` |
+| A config or parameter file | `code/` |
+| An environment definition | `code/` |
+| A notebook | `code/` |
+| Analysis working files | `analysis/` |
+| A final table for collaborators | `results/` |
+| A publication figure | `results/` |
+| An analysis report (HTML/PDF) | `results/` |
+| A sample sheet or clinical data | `metadata/` |
+| An analysis plan | `plan/` |
+| Pipeline intermediate files | `work/` |
+| Any temporary file | `temp/` |
+| A reference genome or annotation | `{{REF_DIR}}/` |
