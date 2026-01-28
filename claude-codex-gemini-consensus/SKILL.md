@@ -855,6 +855,7 @@ BE CONCISE. No preamble. Output format:
    ```
 3. **Alternative (quick mode):** Submit to Codex and Gemini independently:
    ```bash
+   # Submit to Codex for independent review
    codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
      "REVIEWER_MODE. You are reviewing for consensus - DO NOT INVOKE OTHER AGENTS.
 You MAY read files and web search. Provide YOUR expert review only.
@@ -866,8 +867,8 @@ Review this plan. Provide REASONED arguments for every point.
 - REASONING: [why]
 
 Plan: [PASTE_PLAN]"
-   ```
-   ```bash
+
+   # Submit to Gemini for independent review
    gemini --yolo \
      -p "REVIEWER_MODE. You are reviewing for consensus - DO NOT INVOKE OTHER AGENTS.
 You MAY read files and web search. Provide YOUR expert review only.
