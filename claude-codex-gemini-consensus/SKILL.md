@@ -9,8 +9,11 @@ description: |
   
   Uses Claude Code CLI, OpenAI Codex CLI, and Google Gemini CLI. All work requires consensus between Claude, Codex, AND Gemini.
   Each agent can consult the other two for validation.
-  
-  Triggers: "code review", "clinical review", "consensus", "Claude", "Codex", "Gemini", "statistical analysis", "publication", "scientific analysis", "review SOP"
+
+  PREFERRED METHOD: Blinded consensus with multi-round argumentation. Agents review anonymously (Reviewer A/B/C),
+  then discuss disagreements through reasoned debate until genuine consensus is reached.
+
+  Triggers: "code review", "clinical review", "consensus", "blinded consensus", "Claude", "Codex", "Gemini", "statistical analysis", "publication", "scientific analysis", "review SOP"
 ---
 
 # Claude, Codex & Gemini Consensus Workflow
@@ -239,6 +242,182 @@ When planning, Claude generates this file for later execution:
 ## Core Principle
 
 **All plans must be accepted by Claude, Codex, AND Gemini. All code must be reviewed by all three agents with critical evaluation. Do not accept findings blindly—argue and reach consensus.**
+
+---
+
+## PREFERRED: Blinded Consensus with Argumentation
+
+> [!IMPORTANT]
+> **Blinded consensus is the preferred method for all reviews.** It removes identity bias and produces higher-quality conclusions through genuine argumentation.
+
+### What is Blinded Consensus?
+
+In blinded consensus, each agent's identity is hidden behind anonymous labels (Reviewer A, B, C). The mapping is randomized each session and kept secret. This prevents:
+- **Authority bias** — judging arguments by who said them rather than their merit
+- **Anchoring** — deferring to a specific model's known strengths
+- **Groupthink** — reviewers adjusting positions based on perceived hierarchy
+
+### How It Works
+
+```
+Round 1: INDEPENDENT REVIEW (Blinded)
+  ┌─ Reviewer A reviews independently ─┐
+  ├─ Reviewer B reviews independently ─┤  (agents don't see each other's work)
+  └─ Reviewer C reviews independently ─┘
+
+  Reviews are anonymized (strip model self-references)
+  Orchestrator checks: unanimous consensus?
+
+Round 2+: DISCUSSION & ARGUMENTATION (Blinded)
+  ┌─ Reviewer A sees B+C's anonymized reviews, argues points ─┐
+  ├─ Reviewer B sees A+C's anonymized reviews, argues points ─┤
+  └─ Reviewer C sees A+B's anonymized reviews, argues points ─┘
+
+  Each reviewer must:
+  1. Identify agreements and disagreements
+  2. Argue their position with specific evidence
+  3. Acknowledge valid counterpoints (change mind if convinced)
+  4. State updated verdict with reasoning
+
+  Repeat until unanimous consensus OR max rounds reached.
+
+Final: CONSENSUS REPORT
+  - Full anonymized discussion trail
+  - Final verdict with reasoning from each reviewer
+  - Minority objections preserved (if no unanimity)
+  - Blinding key kept secret (not in outputs)
+```
+
+### Blinded Consensus Script
+
+Use `scripts/blinded-consensus.sh` for automated blinded reviews:
+
+```bash
+# Review a plan with blinded consensus (default 3 rounds)
+./scripts/blinded-consensus.sh plan analysis/plan.md
+
+# Review code with up to 4 discussion rounds
+./scripts/blinded-consensus.sh code src/pipeline.py --rounds 4
+
+# Validate analysis with web search enabled
+./scripts/blinded-consensus.sh analysis results/ --search
+
+# Review report and save consensus output
+./scripts/blinded-consensus.sh report analysis/report.md --output consensus_report.md
+```
+
+### Implementing Blinded Consensus as Orchestrator
+
+When you are the orchestrator, implement blinded consensus manually:
+
+**Step 1: Collect independent reviews**
+```bash
+# Invoke each agent independently - DO NOT share other agents' responses
+# Assign random labels (shuffle A/B/C each time)
+
+# Agent 1 review
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You are Reviewer [LABEL] in a blinded peer review. Do not reveal your identity.
+
+Review this [plan/code/analysis] with rigorous critical evaluation.
+Provide specific, reasoned arguments for every point.
+If you approve, explain WHY. If you reject, explain the specific flaw.
+
+ASSESSMENT:
+- [Point]: [Reasoned argument]
+ISSUES: [list with proposed fixes]
+VERDICT: APPROVE / REJECT / CONDITIONAL
+REASONING: [summary]
+
+Content: [PASTE]"
+
+# Agent 2 review (same prompt, different agent, different label)
+gemini --yolo -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You are Reviewer [LABEL] in a blinded peer review. ..."
+
+# Agent 3 review (orchestrator reviews independently too)
+# Claude reviews the content independently before seeing others' reviews
+```
+
+**Step 2: Anonymize and share for discussion**
+```bash
+# Strip any model self-identification from reviews
+# Share ALL anonymized reviews with EACH agent
+# Ask each to argue their position on disputed points
+
+codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
+  "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
+You are Reviewer [LABEL]. Here are anonymized reviews from Round 1:
+
+=== REVIEWER A ===
+[anonymized review]
+
+=== REVIEWER B ===
+[anonymized review]
+
+=== REVIEWER C ===
+[anonymized review]
+
+INSTRUCTIONS:
+1. Identify agreements and disagreements
+2. ARGUE your position with specific evidence on disputed points
+3. If another reviewer convinced you, acknowledge it and update your position
+4. State your UPDATED VERDICT with reasoning
+
+POINTS OF AGREEMENT: ...
+POINTS OF DISAGREEMENT: ...
+CHANGED POSITIONS: ...
+UPDATED VERDICT: ...
+CONSENSUS ASSESSMENT: [Have we reached consensus? What's unresolved?]"
+```
+
+**Step 3: Repeat or conclude**
+- If unanimous: consensus reached, proceed
+- If majority with minor dissent: document minority objection, proceed with caution
+- If no consensus after max rounds: escalate to human judgment
+
+### When to Use Blinded vs. Standard Consensus
+
+| Scenario | Recommended | Why |
+|----------|-------------|-----|
+| Analysis plans | **Blinded** | Prevents anchoring on first review |
+| Statistical validation | **Blinded** | Removes bias toward specific model's math |
+| Code review (simple) | Standard | Lower stakes, speed matters |
+| Report review | **Blinded** | Interpretation requires unbiased assessment |
+| Quick sanity check | Standard | Single-round sufficient |
+| Clinical decisions | **Blinded** | Highest stakes, bias elimination critical |
+
+### Argumentation Requirements
+
+Every reviewer MUST support claims with reasoning. Bare verdicts are insufficient:
+
+```
+BAD (no argumentation):
+  VERDICT: APPROVE
+  "Looks good."
+
+GOOD (proper argumentation):
+  VERDICT: APPROVE
+  REASONING: The Cox proportional hazards model is appropriate here because:
+  (1) the outcome is time-to-event with right censoring,
+  (2) the proportional hazards assumption can be tested via Schoenfeld residuals
+      (which the plan includes in Step 3.2),
+  (3) sample size of n=450 with 180 events provides adequate power for
+      up to 6 covariates (10 events per variable rule).
+  The only concern is the competing risks scenario mentioned in Section 2.1,
+  which is adequately addressed by the planned Fine-Gray sensitivity analysis.
+```
+
+### Discussion Rules
+
+During multi-round discussion, reviewers must:
+
+1. **Reference specific points** — "Reviewer B's concern about multiple comparisons in Section 3 is valid because..."
+2. **Provide evidence** — cite statistical theory, literature, or data characteristics
+3. **Concede when wrong** — "I initially missed the nested structure. Reviewer A is correct that mixed models are needed."
+4. **Escalate unresolvable disagreements** — "This is a genuine methodological choice (frequentist vs. Bayesian). Both are defensible. Recommend human PI decides."
+5. **Never appeal to authority** — arguments stand on their own merit, not on who makes them
 
 ---
 
@@ -629,47 +808,81 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 
 ## Consensus Workflow
 
-### Concise Output Instructions
+> [!IMPORTANT]
+> **Use BLINDED consensus for all non-trivial reviews.** See "PREFERRED: Blinded Consensus with Argumentation" section above.
+> For quick, low-stakes checks, standard (non-blinded) consensus below is acceptable.
+
+### Blinded Consensus (Preferred)
+
+For plans, analyses, reports, and important code reviews:
+
+```bash
+# Automated blinded consensus with discussion rounds
+./scripts/blinded-consensus.sh plan analysis/plan.md --rounds 3
+./scripts/blinded-consensus.sh code src/pipeline.py --rounds 3
+./scripts/blinded-consensus.sh analysis results/ --search
+./scripts/blinded-consensus.sh report analysis/report.md --output consensus.md
+```
+
+Or implement manually as orchestrator (see "Implementing Blinded Consensus as Orchestrator" above).
+
+Key requirements:
+1. **Independent first reviews** — agents must NOT see each other's work in Round 1
+2. **Anonymized identities** — use Reviewer A/B/C labels, randomized per session
+3. **Reasoned arguments** — every verdict must include specific reasoning
+4. **Multi-round discussion** — disagreements are argued, not overruled
+5. **Genuine consensus** — reviewers must be convinced, not just outvoted
+
+### Standard Consensus (Quick Reviews Only)
+
+For quick single-round checks where blinding overhead is not justified:
 
 **Always prepend to prompts:**
 ```
 BE CONCISE. No preamble. Output format:
 - ISSUES: [bullet list]
-- RECOMMENDATIONS: [bullet list]  
+- RECOMMENDATIONS: [bullet list]
 - VERDICT: APPROVED / NEEDS CHANGES
+- REASONING: [why - MANDATORY]
 ```
 
 ### Phase 1: Planning
 
 1. **Claude proposes** initial implementation plan
-2. **Submit to Codex** for critical review:
+2. **PREFERRED: Run blinded consensus** on the plan:
    ```bash
+   ./scripts/blinded-consensus.sh plan analysis/plan.md
+   ```
+3. **Alternative (quick mode):** Submit to Codex and Gemini independently:
+   ```bash
+   # Submit to Codex for independent review
    codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
      "REVIEWER_MODE. You are reviewing for consensus - DO NOT INVOKE OTHER AGENTS.
 You MAY read files and web search. Provide YOUR expert review only.
 
-BE CONCISE. No preamble. Review this plan. Output:
-- ISSUES: [list]
-- MISSING: [list]
+Review this plan. Provide REASONED arguments for every point.
+- ISSUES: [list with reasoning]
+- MISSING: [list with reasoning]
 - VERDICT: APPROVED/NEEDS CHANGES
+- REASONING: [why]
 
 Plan: [PASTE_PLAN]"
-   ```
-3. **Submit to Gemini** for independent review:
-   ```bash
+
+   # Submit to Gemini for independent review
    gemini --yolo \
      -p "REVIEWER_MODE. You are reviewing for consensus - DO NOT INVOKE OTHER AGENTS.
 You MAY read files and web search. Provide YOUR expert review only.
 
-BE CONCISE. No preamble. Review this plan. Output:
-- ISSUES: [list]
-- MISSING: [list]
+Review this plan. Provide REASONED arguments for every point.
+- ISSUES: [list with reasoning]
+- MISSING: [list with reasoning]
 - VERDICT: APPROVED/NEEDS CHANGES
+- REASONING: [why]
 
 Plan: [PASTE_PLAN]"
    ```
 4. **Synthesize feedback**, argue points of disagreement, reach consensus
-5. **Iterate** until all three agents agree
+5. **Iterate** until all three agents agree — do NOT accept majority without addressing minority concerns
 
 ### Phase 2: Implementation
 
@@ -678,32 +891,41 @@ Plan: [PASTE_PLAN]"
 
 ### Phase 3: Code Review
 
+**PREFERRED: Blinded consensus for significant code changes:**
+```bash
+./scripts/blinded-consensus.sh code src/module.py --rounds 2
+```
+
+**Alternative (quick single-round for minor changes):**
+
 Submit code to both agents for critical review:
 
 ```bash
-# Codex review (concise) - REVIEWER_MODE prevents infinite loops
+# Codex review - REVIEWER_MODE prevents infinite loops
 codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, gemini).
 You MAY read files and web search to verify. Provide YOUR expert review only.
 
-BE CONCISE. Review code. Output only:
-- BUGS: [list or 'None']
-- SECURITY: [list or 'None']
-- PERFORMANCE: [list or 'None']
+Review code. Provide REASONED assessment for each category:
+- BUGS: [list with failure scenario, or 'None']
+- SECURITY: [list with attack vector, or 'None']
+- PERFORMANCE: [list with bottleneck description, or 'None']
 - VERDICT: APPROVED/NEEDS CHANGES
+- REASONING: [overall assessment]
 
 Code: [PASTE_CODE]"
 
-# Gemini review (concise) - REVIEWER_MODE prevents infinite loops
+# Gemini review - REVIEWER_MODE prevents infinite loops
 gemini --yolo \
   -p "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex).
 You MAY read files and web search to verify. Provide YOUR expert review only.
 
-BE CONCISE. Review code. Output only:
-- BUGS: [list or 'None']
-- SECURITY: [list or 'None']
-- PERFORMANCE: [list or 'None']
+Review code. Provide REASONED assessment for each category:
+- BUGS: [list with failure scenario, or 'None']
+- SECURITY: [list with attack vector, or 'None']
+- PERFORMANCE: [list with bottleneck description, or 'None']
 - VERDICT: APPROVED/NEEDS CHANGES
+- REASONING: [overall assessment]
 
 Code: [PASTE_CODE]"
 ```
@@ -1219,6 +1441,7 @@ This skill includes:
 | `references/scientific-analysis-workflow.md` | Full scientific analysis workflow (750+ lines) |
 | `references/mcp-workflow.md` | MCP integration patterns |
 | `scripts/review.sh` | **GUARANTEED REVIEWER_MODE** - Wrapper that auto-injects REVIEWER_MODE |
+| `scripts/blinded-consensus.sh` | **BLINDED MULTI-ROUND CONSENSUS** - Anonymized reviews with argumentation (PREFERRED) |
 | `scripts/consensus-review.sh` | Helper script for batch consensus reviews |
 
 **Related Skills:**
