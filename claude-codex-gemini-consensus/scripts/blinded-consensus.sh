@@ -124,7 +124,8 @@ fi
 # Setup
 # =============================================================================
 
-mkdir -p "$CONSENSUS_DIR"
+# Only create directory if it was provided externally (mktemp already created it)
+[[ -n "$CONSENSUS_DIR_EXTERNAL" ]] && mkdir -p "$CONSENSUS_DIR"
 
 # Randomize agent-to-label mapping (blinding)
 AGENTS=("codex" "gemini" "claude")
