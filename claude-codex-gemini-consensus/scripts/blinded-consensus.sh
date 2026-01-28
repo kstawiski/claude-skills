@@ -18,8 +18,23 @@ set -euo pipefail
 
 # Configuration
 MAX_ROUNDS="${MAX_ROUNDS:-3}"
-CONSENSUS_DIR="${CONSENSUS_DIR:-/tmp/consensus-$$}"
+# Check if CONSENSUS_DIR was set externally
+if [[ -n "${CONSENSUS_DIR:-}" ]]; then
+    CONSENSUS_DIR_EXTERNAL=1
+else
+    CONSENSUS_DIR=$(mktemp -d /tmp/consensus.XXXXXX)
+    CONSENSUS_DIR_EXTERNAL=""
+fi
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+# Cleanup trap - only remove if we created it
+cleanup() {
+    if [[ -z "$CONSENSUS_DIR_EXTERNAL" ]] && [[ -d "$CONSENSUS_DIR" ]]; then
+        echo "Cleaning up temporary directory: $CONSENSUS_DIR" >&2
+        rm -rf "$CONSENSUS_DIR"
+    fi
+}
+trap cleanup EXIT INT TERM
 
 usage() {
     cat <<'USAGE'
@@ -363,16 +378,17 @@ You are Reviewer $label in a blinded consensus process. Do not reveal your ident
 
     case "$agent" in
         codex)
-            local cmd="codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check"
-            [[ -n "$SEARCH_FLAG" ]] && cmd="$cmd --search"
-            cmd="$cmd --cd \"$CD_PATH\""
-            eval "$cmd \"\$full_prompt\"" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
+            local args=(exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check)
+            [[ -n "$SEARCH_FLAG" ]] && args+=(--search)
+            args+=(--cd "$CD_PATH")
+            args+=("$full_prompt")
+            codex "${args[@]}" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
             ;;
         gemini)
-            eval "gemini --yolo -p \"\$full_prompt\"" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
+            gemini --yolo -p "$full_prompt" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
             ;;
         claude)
-            eval "claude --dangerously-skip-permissions -p \"\$full_prompt\"" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
+            claude --dangerously-skip-permissions -p "$full_prompt" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
             ;;
     esac
 }
