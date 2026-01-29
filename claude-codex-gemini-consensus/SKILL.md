@@ -10,7 +10,7 @@ description: |
   Uses Claude Code CLI, OpenAI Codex CLI, and Google Gemini CLI. All work requires consensus between Claude, Codex, AND Gemini.
   Each agent can consult the other two for validation.
 
-  PREFERRED METHOD: Blinded consensus with multi-round argumentation. Agents review anonymously (Reviewer A/B/C),
+  DEFAULT METHOD: Blinded consensus with multi-round argumentation. Agents review anonymously (Reviewer A/B/C),
   then discuss disagreements through reasoned debate until genuine consensus is reached.
 
   Triggers: "code review", "clinical review", "consensus", "blinded consensus", "Claude", "Codex", "Gemini", "statistical analysis", "publication", "scientific analysis", "review SOP"
@@ -327,10 +327,129 @@ If you need to do something NOT according to the approved plan:
 
 ---
 
-## PREFERRED: Blinded Consensus with Argumentation
+## Multi-Model Verification: Anti-Error Propagation
 
 > [!IMPORTANT]
-> **Blinded consensus is the preferred method for all reviews.** It removes identity bias and produces higher-quality conclusions through genuine argumentation.
+> **The primary purpose of multi-model consensus is to CATCH ERRORS that a single model would miss.**
+> Models can share systematic biases and blindspots. Blinded, independent review is essential to prevent error propagation.
+
+### Why Multi-Model Verification Matters
+
+Single-model failure modes:
+- **Hallucinated statistics** — Inventing p-values, confidence intervals, effect sizes
+- **Methodological errors** — Wrong test for data type, violated assumptions, incorrect formulas
+- **Clinical implausibility** — Results that make no sense in real-world medicine
+- **Confirmation bias** — Seeing patterns that support expectations, missing contradictions
+- **Copy-paste errors** — Propagating mistakes from earlier steps
+
+Multi-model verification catches these because:
+- Different training data → different blindspots
+- Independent review → no anchoring on first answer
+- Blinded identity → arguments judged on merit, not source
+
+### Anti-Rubber-Stamping Rules
+
+> [!CAUTION]
+> **Rubber-stamping is FORBIDDEN.** Quick approvals without thorough review defeat the purpose of consensus.
+
+Reviewers MUST:
+1. **Actually verify** — Re-run calculations, check formulas, trace logic
+2. **Challenge assumptions** — "Is this test appropriate?" "Are assumptions met?"
+3. **Check plausibility** — "Does this make clinical/scientific sense?"
+4. **Find something** — If review finds zero issues, reviewer is likely not looking hard enough
+5. **Provide evidence** — Every approval must cite specific verification steps taken
+
+```
+BAD (rubber-stamp):
+  VERDICT: APPROVED
+  "Looks correct."
+
+GOOD (verified):
+  VERDICT: APPROVED
+  VERIFICATION:
+  - Recalculated HR manually: exp(0.693) = 2.0 ✓
+  - Checked PH assumption via Schoenfeld test: p=0.42 (assumption holds) ✓
+  - Median OS 14.2mo consistent with literature for this cancer type (PMID:12345678) ✓
+  - Sample size adequate: 180 events for 5 covariates (36 EPV) ✓
+```
+
+### Independent Implementation for Critical Calculations
+
+For high-stakes numerical results, **at least two models must independently compute**:
+
+| Critical Output | Verification Method |
+|-----------------|---------------------|
+| Hazard ratios, odds ratios | Independent calculation from raw data |
+| P-values | Re-run statistical test independently |
+| Confidence intervals | Recalculate using formula |
+| Sample sizes | Count from source data |
+| Survival estimates | Independent KM calculation |
+| Regression coefficients | Re-fit model independently |
+
+```
+INDEPENDENT VERIFICATION PROTOCOL:
+  1. Model A computes result
+  2. Model B computes SAME result independently (no seeing A's code)
+  3. Compare: Results must match within acceptable tolerance
+  4. IF mismatch → investigate discrepancy before proceeding
+  5. IF match → high confidence in correctness
+```
+
+### Sanity Checks: Expected Ranges
+
+Before accepting any result, verify against expected ranges:
+
+| Metric | Suspicious If | Likely Error |
+|--------|---------------|--------------|
+| P-value | Exactly 0.000 or 1.000 | Calculation error |
+| Hazard ratio | < 0.01 or > 100 | Model misspecification |
+| Odds ratio | Negative | Formula error |
+| Confidence interval | Crosses impossible values | Wrong method |
+| Survival probability | < 0 or > 1 | Code bug |
+| Sample size | Doesn't match data | Subsetting error |
+| Percentages | Don't sum to 100% | Missing category |
+
+### Literature Cross-Reference
+
+**All key findings must be compared against published literature:**
+
+1. **Method validation** — Is this statistical approach used in peer-reviewed publications for similar data?
+2. **Result plausibility** — Are effect sizes consistent with published studies? (within 2-3x)
+3. **Known benchmarks** — Do survival curves, response rates, etc. align with established values?
+4. **Red flags** — Results dramatically different from literature require explanation
+
+```bash
+# Example verification prompt - REVIEWER_MODE
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for PMIDs.
+
+Cross-reference these results against published literature:
+- HR for treatment: 0.65 (95% CI: 0.48-0.88)
+- Median OS: 18.3 months
+- 2-year survival: 42%
+
+OUTPUT:
+| Finding | Literature Range | Status | PMID |
+PLAUSIBILITY: [consistent/suspicious/implausible]"
+```
+
+### Error Discovery is Success
+
+**Finding errors is valuable, not failure.** The goal is correct results, not fast approval.
+
+- Reviewers who find errors are doing their job well
+- Models should actively try to break each other's work
+- Disagreement is healthy — it reveals uncertainty
+- "I found a problem" is better than "Looks fine" (when problems exist)
+
+---
+
+## DEFAULT: Blinded Consensus with Argumentation
+
+> [!IMPORTANT]
+> **Blinded consensus is the DEFAULT method for all reviews — not optional, not just "preferred".**
+> It removes identity bias and prevents error replication through genuine independent assessment.
+>
+> **Why blinded by default?** When models see each other's identities or prior answers, they anchor on existing conclusions and replicate errors instead of catching them. Blinding forces truly independent verification.
 
 ### What is Blinded Consensus?
 
@@ -459,16 +578,19 @@ CONSENSUS ASSESSMENT: [Have we reached consensus? What's unresolved?]"
 - If majority with minor dissent: document minority objection, proceed with caution
 - If no consensus after max rounds: escalate to human judgment
 
-### When to Use Blinded vs. Standard Consensus
+### Blinded is Default — Exceptions Require Justification
 
-| Scenario | Recommended | Why |
-|----------|-------------|-----|
-| Analysis plans | **Blinded** | Prevents anchoring on first review |
-| Statistical validation | **Blinded** | Removes bias toward specific model's math |
-| Code review (simple) | Standard | Lower stakes, speed matters |
-| Report review | **Blinded** | Interpretation requires unbiased assessment |
-| Quick sanity check | Standard | Single-round sufficient |
-| Clinical decisions | **Blinded** | Highest stakes, bias elimination critical |
+| Scenario | Method | Rationale |
+|----------|--------|-----------|
+| Analysis plans | **Blinded (default)** | Prevents anchoring on first review |
+| Statistical validation | **Blinded (default)** | Removes bias toward specific model's math |
+| Report review | **Blinded (default)** | Interpretation requires unbiased assessment |
+| Clinical decisions | **Blinded (default)** | Highest stakes, bias elimination critical |
+| Code review | **Blinded (default)** | Bugs often replicated when models see each other's code |
+| Quick sanity check | Non-blinded (exception) | Single-round, trivial verification only |
+
+> [!NOTE]
+> **Non-blinded review is the EXCEPTION, not the rule.** Only use non-blinded for trivial checks where error propagation risk is minimal. When in doubt, use blinded.
 
 ### Argumentation Requirements
 
@@ -891,10 +1013,10 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 ## Consensus Workflow
 
 > [!IMPORTANT]
-> **Use BLINDED consensus for all non-trivial reviews.** See "PREFERRED: Blinded Consensus with Argumentation" section above.
-> For quick, low-stakes checks, standard (non-blinded) consensus below is acceptable.
+> **BLINDED consensus is the DEFAULT for all reviews.** See "DEFAULT: Blinded Consensus with Argumentation" section above.
+> Non-blinded is only acceptable for trivial sanity checks where error propagation risk is minimal.
 
-### Blinded Consensus (Preferred)
+### Blinded Consensus (Default)
 
 For plans, analyses, reports, and important code reviews:
 
@@ -931,7 +1053,7 @@ BE CONCISE. No preamble. Output format:
 ### Phase 1: Planning
 
 1. **Claude proposes** initial implementation plan
-2. **PREFERRED: Run blinded consensus** on the plan:
+2. **Run blinded consensus (default)** on the plan:
    ```bash
    ./scripts/blinded-consensus.sh plan analysis/plan.md
    ```
@@ -973,7 +1095,7 @@ Plan: [PASTE_PLAN]"
 
 ### Phase 3: Code Review
 
-**PREFERRED: Blinded consensus for significant code changes:**
+**Blinded consensus (default for all code changes):**
 ```bash
 ./scripts/blinded-consensus.sh code src/module.py --rounds 2
 ```
