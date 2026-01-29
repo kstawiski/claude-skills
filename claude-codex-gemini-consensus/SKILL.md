@@ -124,7 +124,11 @@ CLAUDE WILL:
 5. [COMPLETENESS] Check: Are ALL planned analyses done? Missing? Incomplete? Wrong?
 6. [CORRECT] Fix any issues, re-validate with all agents
 7. [REPORT] Generate analysis/report.md (Methods, Results, Discussion)
-8. [FIGURES] Create publication-ready figures with captions
+8. [FIGURES] Create publication-ready figures using **scientific-figures skill**
+   - Follow DPI/format/sizing requirements
+   - Use colorblind-accessible palettes
+   - Write complete figure captions
+   - Validate image integrity for microscopy/blots
 9. [HUMANIZE] Apply humanizer skill to remove AI writing patterns
 10. [CITATIONS] Add and verify PubMed references
 11. [CRITICAL FINAL REVIEW] **Clinical AND Scientific assessment by ALL models - MANDATORY SIGN-OFF FROM CLAUDE + CODEX + GEMINI BEFORE COMPLETION**
@@ -156,7 +160,7 @@ CLAUDE WILL:
 | Missing analysis detection | ✅ | Compare plan vs results |
 | **REPORTING** | | |
 | Publication-ready reports | ✅ | Methods/Results/Discussion in report.md |
-| Figures with captions | ✅ | 300+ DPI, complete legends |
+| Figures with captions | ✅ | **scientific-figures skill** - DPI, formats, accessibility |
 | Tables with footnotes | ✅ | Proper formatting, statistical notation |
 | PubMed citations | ✅ | PMID verification |
 | **VALIDATION** | | |
@@ -169,6 +173,12 @@ CLAUDE WILL:
 - Requires Codex CLI and Gemini CLI installed and authenticated
 - Web search requires `--search` flag (Codex) or is built-in (Gemini)
 - Large analyses may need multiple iterations
+
+**Related Skills (auto-applied during workflow):**
+| Skill | When Applied | Purpose |
+|-------|--------------|---------|
+| **scientific-figures** | Figure generation phase | Publication-ready figures, DPI/format specs, accessibility, captions |
+| **humanizer** | Report generation phase | Remove AI writing patterns for natural prose |
 
 ### Quick-Start Cheatsheet
 
