@@ -268,10 +268,13 @@ IF output is invalid/implausible:
   1. STOP immediately
   2. Diagnose the issue
   3. Fix the root cause
-  4. Re-run affected analyses
-  5. Validate corrected output with all agents
-  6. Continue only after consensus approval
+  4. DELETE incorrect scripts and outputs (keep repo clean)
+  5. Re-run affected analyses
+  6. Validate corrected output with all agents
+  7. Continue only after consensus approval
 ```
+
+**Repository hygiene:** When fixing issues, always remove wrong/incorrect scripts and outputs. Do not leave broken or invalid files in the repository — they cause confusion and may be accidentally used later.
 
 ### Resource Flexibility
 
@@ -293,6 +296,34 @@ If an analysis cannot be completed as planned:
 5. **Execute alternative** — Complete the revised analysis
 
 **No analysis should be skipped without consensus on an alternative approach.**
+
+### Plan Compliance: Periodic Verification
+
+**Periodically check if your work aligns with the consensus-approved plan.**
+
+During execution, regularly verify:
+- Are you following the approved analysis/plan.md?
+- Are methods being applied as specified?
+- Are outputs matching what was planned?
+
+```
+PERIODIC CHECK (every major step):
+  1. Compare current work against plan
+  2. IF aligned → continue
+  3. IF deviating → STOP and follow deviation protocol below
+```
+
+**Deviation Protocol:**
+
+If you need to do something NOT according to the approved plan:
+1. **STOP** — Do not proceed with unapproved work
+2. **Document the deviation** — What needs to change and why
+3. **Argue with all models** — Present reasoning to Claude + Codex + Gemini
+4. **Reach new consensus** — All agents must approve the change
+5. **Update plan** — Modify analysis/plan.md with the approved corrections
+6. **Continue** — Only after plan is re-approved with corrections
+
+**Never silently deviate from an approved plan.** All changes require explicit consensus re-approval.
 
 ---
 
