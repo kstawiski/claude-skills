@@ -62,6 +62,30 @@ ANALYSIS EXECUTION (from analysis/plan.md)
 
 ---
 
+## Core Design Principles
+
+### Clarity Beats Decoration
+
+- Prefer **2D plots**; avoid 3D effects, excessive gradients, chartjunk
+- Use **direct labeling** over legends when feasible (reduces eye movement)
+- Maintain consistent typography, colors, and axis styling across the entire manuscript
+- Each panel should answer: **"What should the reader learn in 5 seconds?"**
+
+### Show the Data, Not Just Summaries
+
+- For small/medium n (≤30-50 per group), show **individual data points** + summary statistics
+- Avoid bar charts for continuous distributions; prefer box/violin + overlaid points
+- When using summary statistics, always report: measure of center (mean/median) + measure of spread (SD/IQR/CI)
+
+### Statistical Transparency
+
+- Define **error bars explicitly** in every figure caption (SD, SEM, 95% CI)
+- Report **exact n** for each group/condition
+- Show exact P-values where journal allows (not just "P < 0.05")
+- State correction method for multiple comparisons (Bonferroni, FDR, etc.)
+
+---
+
 ## Technical Requirements
 
 ### Resolution (DPI) Standards
@@ -119,6 +143,18 @@ ANALYSIS EXECUTION (from analysis/plan.md)
 - **Serif** (Times): Match manuscript body text
 - Keep consistent throughout all figures
 
+### Line Weights and Markers
+
+| Element | Minimum | Recommended | Notes |
+|---------|---------|-------------|-------|
+| Plot lines | 0.5 pt | 1.0-1.5 pt | Thicker for emphasis |
+| Axis lines | 0.5 pt | 0.8 pt | Frame the plot |
+| Grid lines | 0.25 pt | 0.3-0.5 pt | Subtle, don't dominate |
+| Error bars | 0.5 pt | 1.0 pt | Match data lines |
+| Markers | 3 pt | 5-8 pt | Visible at final size |
+
+> **Warning:** Avoid hairlines (<0.25 pt). They may disappear in print or become invisible when scaled.
+
 ---
 
 ## Panel Figures (Multi-Panel Layout)
@@ -166,6 +202,27 @@ GOOD: Horizontal reading order         BAD: Vertical-first layout
 - Align baselines and axes where appropriate
 - Use consistent spacing between panels (3-5 mm)
 - Submit multi-panel figures as ONE file
+
+### Panel Narrative Logic
+
+Order panels to tell a coherent story:
+
+```
+Setup → Key Result → Validation → Mechanism → Robustness/Generalization
+```
+
+| Panel Position | Typical Content |
+|----------------|-----------------|
+| A, B | Study design, cohort overview, methods schematic |
+| C, D | Primary findings (main hypothesis test) |
+| E, F | Supporting evidence, mechanistic insight |
+| G+ | Validation cohort, sensitivity analyses, extensions |
+
+**Principles:**
+- Each panel = one message; move secondary analyses to Supplement
+- Same axis limits when comparisons are intended
+- Same transforms (log, z-score) for comparable panels
+- Consistent color/symbol mapping across all panels
 
 ---
 
@@ -271,6 +328,71 @@ GOOD: Horizontal reading order         BAD: Vertical-first layout
 3. Appropriate color palette (see Accessibility section)
 4. Clustering method stated in caption if used
 5. Normalization/scaling method stated
+
+### ROC and Precision-Recall Curves
+
+**ROC curves:**
+1. X-axis: False positive rate (1 - Specificity)
+2. Y-axis: True positive rate (Sensitivity)
+3. Diagonal reference line (random classifier)
+4. AUC with 95% CI (bootstrap or DeLong)
+5. Define positive class explicitly in caption
+
+**Precision-Recall (PR) curves:**
+- **Use when classes are imbalanced** (rare outcomes) — ROC can be misleading
+- X-axis: Recall (Sensitivity)
+- Y-axis: Precision (PPV)
+- Horizontal reference line at prevalence (baseline)
+- Report AUPRC (Area Under PR Curve)
+
+**Caption must include:**
+- Definition of positive class
+- Number of positives and negatives in test set
+- Confidence interval method (bootstrap replicates, DeLong)
+- Whether curves are from training, validation, or held-out test set
+
+---
+
+## Image Integrity (Microscopy, Gels, Blots)
+
+> **Critical for peer review.** Image manipulation is a leading cause of retractions.
+
+### Acceptable Adjustments
+
+| Allowed | Not Allowed |
+|---------|-------------|
+| Global brightness/contrast | Selective region enhancement |
+| Cropping (with disclosure) | Splicing from different images |
+| Color balance correction | Cloning/removing objects |
+| Uniform scaling | Non-linear distortions |
+
+**Key rules:**
+1. Apply adjustments to the **entire image**, not selectively
+2. Retain **original/raw files** for all images
+3. Disclose any non-trivial processing in Methods or caption
+4. If cropping, indicate in caption; show full image in Supplement if requested
+
+### Specific Requirements
+
+**Microscopy:**
+- Include **scale bars** (calibrated, not estimated)
+- State magnification, microscope type, acquisition settings
+- For representative images: state number of replicates (e.g., "Representative of n=5 independent experiments")
+
+**Gels and Blots:**
+- Show **full uncropped blot** in Supplement (many journals require this)
+- If lanes are rearranged, clearly demarcate with dividing lines
+- State exposure time and whether image was inverted
+- Never remove bands or splice non-adjacent lanes without clear disclosure
+
+**Radiology/Medical Imaging:**
+- Remove or anonymize patient identifiers
+- State window/level settings if relevant
+- Include anatomical orientation markers
+
+### Reference
+
+[HHS Office of Research Integrity: Image Guidelines](https://ori.hhs.gov/education/products/RIandImages/guidelines/list.html)
 
 ---
 
@@ -442,6 +564,11 @@ def set_publication_style():
         # Math text
         'mathtext.fontset': 'stix',
         'mathtext.default': 'regular',
+
+        # Font embedding (CRITICAL for PDF)
+        'pdf.fonttype': 42,  # TrueType fonts (editable text)
+        'ps.fonttype': 42,   # TrueType for PostScript
+        'svg.fonttype': 'none',  # Keep text as text in SVG
     })
 
 set_publication_style()
@@ -797,6 +924,8 @@ dev.off()
 
 For consensus workflow integration, create **standalone scripts** for each figure:
 
+### Directory Structure
+
 ```
 analysis/
 ├── plan.md
@@ -810,8 +939,25 @@ analysis/
 │   ├── fig01_survival.tiff
 │   ├── fig02_volcano.pdf
 │   └── ...
+├── figure_manifest.csv        # Optional: tracking file
 └── report.md
 ```
+
+### Figure Manifest (Optional)
+
+For complex manuscripts with many figures, maintain a tracking file:
+
+```csv
+figure_id,panel,script,input_data,output_file,caption_file,status
+Fig1,A-D,fig01_survival.py,clinical_data.csv,figures/fig01_survival.pdf,captions/fig01.txt,complete
+Fig2,A-C,fig02_volcano.R,de_results.csv,figures/fig02_volcano.pdf,captions/fig02.txt,pending_review
+Fig3,A-F,fig03_heatmap.py,expression_matrix.csv,figures/fig03_heatmap.pdf,captions/fig03.txt,in_progress
+```
+
+This enables:
+- Tracking figure generation status
+- Linking figures to source data for reproducibility
+- Coordinating multi-author figure revisions
 
 **Script template (Python):**
 
@@ -969,13 +1115,31 @@ Before submitting figures through the consensus workflow, verify:
 
 ## Sources and References
 
+### Journal Guidelines
 - [Nature Figure Guidelines](https://www.nature.com/nature/for-authors/formatting-guide)
+- [Nature Initial Submission (n/error bars)](https://www.nature.com/nature/for-authors/initial-submission)
 - [Science Author Instructions](https://www.science.org/content/page/instructions-preparing-initial-manuscript)
+- [Cell Digital Art Guide (PDF)](https://www.cell.com/pb/assets/raw/journals/society/biophysj/PDFs/digital-art-guide.pdf)
 - [Wiley Figure Preparation](https://authorservices.wiley.com/author-resources/Journal-Authors/Prepare/manuscript-preparation-guidelines.html/figure-preparation.html)
+- [PLOS ONE Figure Requirements](https://journals.plos.org/plosone/s/figures)
+- [JCB Figure Guidelines](https://rupress.org/jcb/pages/fig-vid-guidelines)
+
+### Best Practices & Tutorials
 - [CalTech Figure Caption Handout](https://writing.caltech.edu/documents/27629/HWC-FigureCaptionHandout.1-2024.pdf)
-- [Viridis R Package](https://sjmgarnier.github.io/viridis/)
-- [ggpubr Package](https://rpkgs.datanovia.com/ggpubr/)
 - [Matplotlib for Papers (GitHub)](https://github.com/jbmouret/matplotlib_for_papers)
 - [Publication-Ready Figures Tutorial](https://github.com/ICWallis/tutorial-publication-ready-figures)
-- [Colorblind-Friendly Figures Guidelines](https://www.nki.nl/about-us/responsible-research/guidelines-color-blind-friendly-figures)
+
+### Color & Accessibility
+- [Viridis R Package](https://sjmgarnier.github.io/viridis/)
+- [Colorblind-Friendly Figures Guidelines (NKI)](https://www.nki.nl/about-us/responsible-research/guidelines-color-blind-friendly-figures)
 - [Crameri et al. (2024) - Choosing Suitable Color Palettes](https://currentprotocols.onlinelibrary.wiley.com/doi/full/10.1002/cpz1.1126)
+
+### Statistics & Image Integrity
+- [HHS ORI Image Guidelines](https://ori.hhs.gov/education/products/RIandImages/guidelines/list.html)
+- [Cumming et al. (2007) - Error Bars in Experimental Biology](https://pmc.ncbi.nlm.nih.gov/articles/PMC2064100/)
+- [Cromey (2010) - Avoiding Twisted Pixels](https://pmc.ncbi.nlm.nih.gov/articles/PMC4114110/)
+
+### R Packages
+- [ggpubr Package](https://rpkgs.datanovia.com/ggpubr/)
+- [survminer Package](https://rpkgs.datanovia.com/survminer/)
+- [ComplexHeatmap](https://jokergoo.github.io/ComplexHeatmap-reference/book/)
