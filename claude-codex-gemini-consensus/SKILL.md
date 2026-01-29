@@ -10,7 +10,7 @@ description: |
   Uses Claude Code CLI, OpenAI Codex CLI, and Google Gemini CLI. All work requires consensus between Claude, Codex, AND Gemini.
   Each agent can consult the other two for validation.
 
-  PREFERRED METHOD: Blinded consensus with multi-round argumentation. Agents review anonymously (Reviewer A/B/C),
+  DEFAULT METHOD: Blinded consensus with multi-round argumentation. Agents review anonymously (Reviewer A/B/C),
   then discuss disagreements through reasoned debate until genuine consensus is reached.
 
   Triggers: "code review", "clinical review", "consensus", "blinded consensus", "Claude", "Codex", "Gemini", "statistical analysis", "publication", "scientific analysis", "review SOP"
@@ -245,10 +245,211 @@ When planning, Claude generates this file for later execution:
 
 ---
 
-## PREFERRED: Blinded Consensus with Argumentation
+## Output Validation: Zero Tolerance for Invalid Results
+
+> [!CAUTION]
+> **MANDATORY: Continuous output validation throughout all analyses.**
+
+**Regularly check if output is correct/valid, clinically and scientifically plausible. Fix all issues as they arise. No compromises or deferred analysis.**
+
+### Requirements
+
+1. **Validate at every step** — Do not wait until the end to check results
+2. **Clinical plausibility** — Results must make sense in real-world clinical context
+3. **Scientific validity** — Statistical methods appropriate, assumptions met, results interpretable
+4. **Immediate correction** — Fix issues when discovered, not later
+5. **No deferred analysis** — If an analysis is planned, it MUST be completed or the plan MUST be changed
+6. **Consensus on corrections** — All fixes require validation from Claude + Codex + Gemini
+
+### When Issues Are Found
+
+```
+IF output is invalid/implausible:
+  1. STOP immediately
+  2. Diagnose the issue
+  3. Fix the root cause
+  4. DELETE incorrect scripts and outputs (keep repo clean)
+  5. Re-run affected analyses
+  6. Validate corrected output with all agents
+  7. Continue only after consensus approval
+```
+
+**Repository hygiene:** When fixing issues, always remove wrong/incorrect scripts and outputs. Do not leave broken or invalid files in the repository — they cause confusion and may be accidentally used later.
+
+### Resource Flexibility
+
+**You can install or download whatever you need.** If a required package, tool, dataset, or reference is missing:
+- Install packages via pip, conda, npm, etc.
+- Download reference data from authoritative sources
+- Fetch literature via web search
+- Use any available MCP tools
+
+Do not let missing resources block progress — acquire what you need and continue.
+
+### Alternative Approaches
+
+If an analysis cannot be completed as planned:
+1. **Document why** — Explain the blocker clearly
+2. **Propose alternative** — Suggest equivalent/better approach
+3. **Get consensus** — All agents must approve the alternative
+4. **Update plan** — Modify analysis/plan.md to reflect the change
+5. **Execute alternative** — Complete the revised analysis
+
+**No analysis should be skipped without consensus on an alternative approach.**
+
+### Plan Compliance: Periodic Verification
+
+**Periodically check if your work aligns with the consensus-approved plan.**
+
+During execution, regularly verify:
+- Are you following the approved analysis/plan.md?
+- Are methods being applied as specified?
+- Are outputs matching what was planned?
+
+```
+PERIODIC CHECK (every major step):
+  1. Compare current work against plan
+  2. IF aligned → continue
+  3. IF deviating → STOP and follow deviation protocol below
+```
+
+**Deviation Protocol:**
+
+If you need to do something NOT according to the approved plan:
+1. **STOP** — Do not proceed with unapproved work
+2. **Document the deviation** — What needs to change and why
+3. **Argue with all models** — Present reasoning to Claude + Codex + Gemini
+4. **Reach new consensus** — All agents must approve the change
+5. **Update plan** — Modify analysis/plan.md with the approved corrections
+6. **Continue** — Only after plan is re-approved with corrections
+
+**Never silently deviate from an approved plan.** All changes require explicit consensus re-approval.
+
+---
+
+## Multi-Model Verification: Anti-Error Propagation
 
 > [!IMPORTANT]
-> **Blinded consensus is the preferred method for all reviews.** It removes identity bias and produces higher-quality conclusions through genuine argumentation.
+> **The primary purpose of multi-model consensus is to CATCH ERRORS that a single model would miss.**
+> Models can share systematic biases and blindspots. Blinded, independent review is essential to prevent error propagation.
+
+### Why Multi-Model Verification Matters
+
+Single-model failure modes:
+- **Hallucinated statistics** — Inventing p-values, confidence intervals, effect sizes
+- **Methodological errors** — Wrong test for data type, violated assumptions, incorrect formulas
+- **Clinical implausibility** — Results that make no sense in real-world medicine
+- **Confirmation bias** — Seeing patterns that support expectations, missing contradictions
+- **Copy-paste errors** — Propagating mistakes from earlier steps
+
+Multi-model verification catches these because:
+- Different training data → different blindspots
+- Independent review → no anchoring on first answer
+- Blinded identity → arguments judged on merit, not source
+
+### Anti-Rubber-Stamping Rules
+
+> [!CAUTION]
+> **Rubber-stamping is FORBIDDEN.** Quick approvals without thorough review defeat the purpose of consensus.
+
+Reviewers MUST:
+1. **Actually verify** — Re-run calculations, check formulas, trace logic
+2. **Challenge assumptions** — "Is this test appropriate?" "Are assumptions met?"
+3. **Check plausibility** — "Does this make clinical/scientific sense?"
+4. **Find something** — If review finds zero issues, reviewer is likely not looking hard enough
+5. **Provide evidence** — Every approval must cite specific verification steps taken
+
+```
+BAD (rubber-stamp):
+  VERDICT: APPROVED
+  "Looks correct."
+
+GOOD (verified):
+  VERDICT: APPROVED
+  VERIFICATION:
+  - Recalculated HR manually: exp(0.693) = 2.0 ✓
+  - Checked PH assumption via Schoenfeld test: p=0.42 (assumption holds) ✓
+  - Median OS 14.2mo consistent with literature for this cancer type (PMID:12345678) ✓
+  - Sample size adequate: 180 events for 5 covariates (36 EPV) ✓
+```
+
+### Independent Implementation for Critical Calculations
+
+For high-stakes numerical results, **at least two models must independently compute**:
+
+| Critical Output | Verification Method |
+|-----------------|---------------------|
+| Hazard ratios, odds ratios | Independent calculation from raw data |
+| P-values | Re-run statistical test independently |
+| Confidence intervals | Recalculate using formula |
+| Sample sizes | Count from source data |
+| Survival estimates | Independent KM calculation |
+| Regression coefficients | Re-fit model independently |
+
+```
+INDEPENDENT VERIFICATION PROTOCOL:
+  1. Model A computes result
+  2. Model B computes SAME result independently (no seeing A's code)
+  3. Compare: Results must match within acceptable tolerance
+  4. IF mismatch → investigate discrepancy before proceeding
+  5. IF match → high confidence in correctness
+```
+
+### Sanity Checks: Expected Ranges
+
+Before accepting any result, verify against expected ranges:
+
+| Metric | Suspicious If | Likely Error |
+|--------|---------------|--------------|
+| P-value | Exactly 0.000 or 1.000 | Calculation error |
+| Hazard ratio | < 0.01 or > 100 | Model misspecification |
+| Odds ratio | Negative | Formula error |
+| Confidence interval | Crosses impossible values | Wrong method |
+| Survival probability | < 0 or > 1 | Code bug |
+| Sample size | Doesn't match data | Subsetting error |
+| Percentages | Don't sum to 100% | Missing category |
+
+### Literature Cross-Reference
+
+**All key findings must be compared against published literature:**
+
+1. **Method validation** — Is this statistical approach used in peer-reviewed publications for similar data?
+2. **Result plausibility** — Are effect sizes consistent with published studies? (within 2-3x)
+3. **Known benchmarks** — Do survival curves, response rates, etc. align with established values?
+4. **Red flags** — Results dramatically different from literature require explanation
+
+```bash
+# Example verification prompt - REVIEWER_MODE
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for PMIDs.
+
+Cross-reference these results against published literature:
+- HR for treatment: 0.65 (95% CI: 0.48-0.88)
+- Median OS: 18.3 months
+- 2-year survival: 42%
+
+OUTPUT:
+| Finding | Literature Range | Status | PMID |
+PLAUSIBILITY: [consistent/suspicious/implausible]"
+```
+
+### Error Discovery is Success
+
+**Finding errors is valuable, not failure.** The goal is correct results, not fast approval.
+
+- Reviewers who find errors are doing their job well
+- Models should actively try to break each other's work
+- Disagreement is healthy — it reveals uncertainty
+- "I found a problem" is better than "Looks fine" (when problems exist)
+
+---
+
+## DEFAULT: Blinded Consensus with Argumentation
+
+> [!IMPORTANT]
+> **Blinded consensus is the DEFAULT method for all reviews — not optional, not just "preferred".**
+> It removes identity bias and prevents error replication through genuine independent assessment.
+>
+> **Why blinded by default?** When models see each other's identities or prior answers, they anchor on existing conclusions and replicate errors instead of catching them. Blinding forces truly independent verification.
 
 ### What is Blinded Consensus?
 
@@ -377,16 +578,19 @@ CONSENSUS ASSESSMENT: [Have we reached consensus? What's unresolved?]"
 - If majority with minor dissent: document minority objection, proceed with caution
 - If no consensus after max rounds: escalate to human judgment
 
-### When to Use Blinded vs. Standard Consensus
+### Blinded is Default — Exceptions Require Justification
 
-| Scenario | Recommended | Why |
-|----------|-------------|-----|
-| Analysis plans | **Blinded** | Prevents anchoring on first review |
-| Statistical validation | **Blinded** | Removes bias toward specific model's math |
-| Code review (simple) | Standard | Lower stakes, speed matters |
-| Report review | **Blinded** | Interpretation requires unbiased assessment |
-| Quick sanity check | Standard | Single-round sufficient |
-| Clinical decisions | **Blinded** | Highest stakes, bias elimination critical |
+| Scenario | Method | Rationale |
+|----------|--------|-----------|
+| Analysis plans | **Blinded (default)** | Prevents anchoring on first review |
+| Statistical validation | **Blinded (default)** | Removes bias toward specific model's math |
+| Report review | **Blinded (default)** | Interpretation requires unbiased assessment |
+| Clinical decisions | **Blinded (default)** | Highest stakes, bias elimination critical |
+| Code review | **Blinded (default)** | Bugs often replicated when models see each other's code |
+| Quick sanity check | Non-blinded (exception) | Single-round, trivial verification only |
+
+> [!NOTE]
+> **Non-blinded review is the EXCEPTION, not the rule.** Only use non-blinded for trivial checks where error propagation risk is minimal. When in doubt, use blinded.
 
 ### Argumentation Requirements
 
@@ -809,10 +1013,10 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 ## Consensus Workflow
 
 > [!IMPORTANT]
-> **Use BLINDED consensus for all non-trivial reviews.** See "PREFERRED: Blinded Consensus with Argumentation" section above.
-> For quick, low-stakes checks, standard (non-blinded) consensus below is acceptable.
+> **BLINDED consensus is the DEFAULT for all reviews.** See "DEFAULT: Blinded Consensus with Argumentation" section above.
+> Non-blinded is only acceptable for trivial sanity checks where error propagation risk is minimal.
 
-### Blinded Consensus (Preferred)
+### Blinded Consensus (Default)
 
 For plans, analyses, reports, and important code reviews:
 
@@ -849,7 +1053,7 @@ BE CONCISE. No preamble. Output format:
 ### Phase 1: Planning
 
 1. **Claude proposes** initial implementation plan
-2. **PREFERRED: Run blinded consensus** on the plan:
+2. **Run blinded consensus (default)** on the plan:
    ```bash
    ./scripts/blinded-consensus.sh plan analysis/plan.md
    ```
@@ -891,7 +1095,7 @@ Plan: [PASTE_PLAN]"
 
 ### Phase 3: Code Review
 
-**PREFERRED: Blinded consensus for significant code changes:**
+**Blinded consensus (default for all code changes):**
 ```bash
 ./scripts/blinded-consensus.sh code src/module.py --rounds 2
 ```
@@ -1110,6 +1314,601 @@ For clinical research projects requiring publication-ready outputs, follow this 
 10. **CRITICAL: Final Validation** → **Clinical AND Scientific assessment by ALL models (Claude + Codex + Gemini) - MANDATORY SIGN-OFF**
 
 **See [references/scientific-analysis-workflow.md](references/scientific-analysis-workflow.md) for complete workflow.**
+
+---
+
+### Phase-Based Execution with Consensus Gates
+
+> [!IMPORTANT]
+> **Every analysis phase requires THREE consensus checkpoints:**
+> 1. **Pre-implementation planning** — How will we implement this phase?
+> 2. **Code review** — Is the implementation correct?
+> 3. **Results validation** — Are results clinically/scientifically valid?
+>
+> **Cannot proceed to next phase until ALL models approve current phase.**
+
+#### Phase Execution Protocol
+
+For each planned analysis (from analysis/plan.md):
+
+```
+PHASE EXECUTION LOOP:
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │ CHECKPOINT 1: PRE-IMPLEMENTATION PLANNING                   │
+  ├─────────────────────────────────────────────────────────────┤
+  │ 1. Read analysis requirements from plan.md                  │
+  │ 2. Draft implementation approach (methods, packages, steps) │
+  │ 3. Submit to blinded consensus:                             │
+  │    - Is this the correct statistical method?                │
+  │    - Are assumptions appropriate for this data?             │
+  │    - Is the implementation approach sound?                  │
+  │ 4. ALL models must approve before coding begins             │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │ IMPLEMENTATION                                              │
+  ├─────────────────────────────────────────────────────────────┤
+  │ 1. Write code following approved implementation plan        │
+  │ 2. Run analysis and capture outputs                         │
+  │ 3. Document any deviations (require re-consensus if major)  │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │ CHECKPOINT 2: CODE REVIEW (Blinded)                         │
+  ├─────────────────────────────────────────────────────────────┤
+  │ 1. Submit code to blinded consensus review                  │
+  │ 2. Reviewers check:                                         │
+  │    - Does code match approved implementation plan?          │
+  │    - Are there bugs, errors, or logic flaws?                │
+  │    - Are statistical methods implemented correctly?         │
+  │    - Are edge cases handled?                                │
+  │ 3. ALL models must approve OR issues must be fixed          │
+  │ 4. If fixes needed → fix → re-review until approved         │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │ CHECKPOINT 3: RESULTS VALIDATION (Blinded)                  │
+  ├─────────────────────────────────────────────────────────────┤
+  │ 1. Submit results to blinded consensus review               │
+  │ 2. Reviewers assess:                                        │
+  │    - Are results clinically plausible?                      │
+  │    - Are results scientifically valid?                      │
+  │    - Do values fall within expected ranges?                 │
+  │    - Are results consistent with literature?                │
+  │    - Do results answer the planned research question?       │
+  │ 3. ALL models must approve OR analysis must be re-done      │
+  │ 4. If invalid → diagnose → fix → re-run → re-validate       │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │ PHASE GATE: PROCEED OR BLOCK                                │
+  ├─────────────────────────────────────────────────────────────┤
+  │ IF all 3 checkpoints passed:                                │
+  │   → Mark phase complete in plan.md                          │
+  │   → Proceed to next phase                                   │
+  │ ELSE:                                                       │
+  │   → DO NOT PROCEED                                          │
+  │   → Fix issues and re-validate                              │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+#### Checkpoint 1: Pre-Implementation Planning Consensus
+
+Before writing ANY code for a phase:
+
+```bash
+# Blinded consensus on implementation approach
+./scripts/blinded-consensus.sh plan implementation_plan.md --rounds 2
+
+# OR manual blinded review with specific questions:
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. Blinded review.
+
+PHASE: [Phase name from plan.md]
+OBJECTIVE: [What this analysis should answer]
+PROPOSED IMPLEMENTATION:
+- Method: [statistical test/model]
+- Packages: [R/Python packages]
+- Steps: [1. ..., 2. ..., 3. ...]
+
+REVIEW QUESTIONS:
+1. Is this the correct statistical method for this data/question?
+2. Are the assumptions of this method met by our data?
+3. Is the proposed implementation approach sound?
+4. Are there methodological concerns?
+
+OUTPUT:
+- METHOD APPROPRIATE: Y/N | [reasoning]
+- ASSUMPTIONS VALID: Y/N | [reasoning]
+- IMPLEMENTATION SOUND: Y/N | [reasoning]
+- CONCERNS: [list or 'None']
+- VERDICT: APPROVE / REJECT
+- REQUIRED CHANGES: [if any]"
+```
+
+#### Checkpoint 2: Code Review Consensus
+
+After implementation, before accepting results:
+
+```bash
+# Blinded code review
+./scripts/blinded-consensus.sh code analysis/scripts/phase_X.py --rounds 2
+
+# OR manual with specific checks:
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. Blinded code review.
+
+PHASE: [Phase name]
+APPROVED IMPLEMENTATION PLAN: [summary]
+ACTUAL CODE: [paste code]
+
+REVIEW QUESTIONS:
+1. Does code match the approved implementation plan?
+2. Are statistical methods implemented correctly?
+3. Are there bugs, logic errors, or edge case failures?
+4. Are results being calculated/reported correctly?
+
+OUTPUT:
+- MATCHES PLAN: Y/N | [deviations if any]
+- IMPLEMENTATION CORRECT: Y/N | [errors if any]
+- BUGS FOUND: [list or 'None']
+- VERDICT: APPROVE / REJECT
+- REQUIRED FIXES: [if any]"
+```
+
+#### Checkpoint 3: Results Validation Consensus
+
+After code is approved, validate the actual results:
+
+```bash
+# Blinded results validation
+./scripts/blinded-consensus.sh analysis results/phase_X/ --rounds 2 --search
+
+# OR manual with clinical/scientific assessment:
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for literature. Blinded results review.
+
+PHASE: [Phase name]
+RESEARCH QUESTION: [What this should answer]
+RESULTS:
+- [Key finding 1]
+- [Key finding 2]
+- [Statistics, p-values, CIs]
+
+VALIDATION QUESTIONS:
+1. Are these results clinically plausible?
+2. Are these results scientifically valid?
+3. Do values fall within expected ranges for this domain?
+4. Are results consistent with published literature?
+5. Do results actually answer the research question?
+
+OUTPUT:
+- CLINICALLY PLAUSIBLE: Y/N | [reasoning]
+- SCIENTIFICALLY VALID: Y/N | [reasoning]
+- WITHIN EXPECTED RANGES: Y/N | [suspicious values if any]
+- LITERATURE CONSISTENT: Y/N | [PMIDs for comparison]
+- ANSWERS QUESTION: Y/N | [reasoning]
+- VERDICT: VALID / INVALID
+- CONCERNS: [list or 'None']"
+```
+
+#### Phase Tracking in plan.md
+
+Track checkpoint status for each phase:
+
+```markdown
+### Phase 3: Survival Analysis
+
+**Objective:** Compare OS between treatment groups
+
+**Status:** ✓ COMPLETE
+
+**Checkpoints:**
+- [x] Pre-implementation planning approved (2024-01-15)
+  - Method: Cox PH with Schoenfeld residual check
+  - Reviewers: A ✓, B ✓, C ✓
+- [x] Code review passed (2024-01-15)
+  - Script: analysis/scripts/fig03_survival.py
+  - Reviewers: A ✓, B ✓, C ✓
+- [x] Results validated (2024-01-15)
+  - HR: 0.72 (95% CI: 0.58-0.89), p=0.002
+  - Clinical plausibility: Confirmed (consistent with PMID:12345678)
+  - Reviewers: A ✓, B ✓, C ✓
+
+**Outputs:**
+- analysis/figures/fig03_km_curve.png
+- analysis/tables/tab03_cox_model.csv
+```
+
+#### What To Do When Checkpoints Fail
+
+| Checkpoint | Failure | Action |
+|------------|---------|--------|
+| Pre-implementation | Wrong method proposed | Revise method, re-submit for consensus |
+| Pre-implementation | Assumptions not met | Propose alternative method, get new consensus |
+| Code review | Bugs found | Fix bugs, re-submit for review |
+| Code review | Doesn't match plan | Either fix code OR get consensus on deviation |
+| Results validation | Clinically implausible | Investigate data/code, fix root cause, re-run |
+| Results validation | Scientifically invalid | Review methodology, may need to restart phase |
+| Results validation | Inconsistent with literature | Document and explain OR investigate for errors |
+
+#### Mandatory Phase Gate Rule
+
+> [!CAUTION]
+> **HARD STOP: Do not proceed to the next phase until ALL THREE checkpoints pass for the current phase.**
+>
+> Skipping checkpoints or proceeding with unresolved issues propagates errors through the entire analysis.
+
+```
+IF checkpoint fails:
+  1. Document the failure
+  2. Diagnose root cause
+  3. Implement fix
+  4. Re-run affected work
+  5. Re-submit for consensus
+  6. REPEAT until checkpoint passes
+
+ONLY THEN proceed to next phase
+```
+
+---
+
+### Long-Running Analysis Monitoring (2-6 Hour Intervals)
+
+> [!IMPORTANT]
+> **For analyses expected to run multiple hours or days, implement periodic monitoring every 2-6 hours.**
+>
+> Don't wait until the end to discover the pipeline failed at hour 2 of a 24-hour run.
+
+#### Why Periodic Monitoring?
+
+Long analyses can fail silently or produce invalid results that compound over time:
+- **Silent failures** — Script crashes, memory errors, network timeouts
+- **Data drift** — Intermediate results becoming invalid as pipeline progresses
+- **Resource exhaustion** — Disk space, memory, API rate limits
+- **Logical errors** — Bugs that only manifest after hours of processing
+- **Plan deviation** — Gradual drift from approved methodology
+
+**Catching issues early saves hours/days of wasted computation.**
+
+#### Monitoring Schedule
+
+| Analysis Duration | Monitoring Interval | Checkpoints |
+|-------------------|---------------------|-------------|
+| 2-4 hours | Every 2 hours | 1-2 checks |
+| 4-12 hours | Every 3-4 hours | 2-4 checks |
+| 12-24 hours | Every 4-6 hours | 3-6 checks |
+| 24+ hours | Every 6 hours | 4+ checks |
+
+#### What to Check During Monitoring
+
+```
+PERIODIC MONITORING CHECKLIST (every 2-6 hours):
+
+┌─────────────────────────────────────────────────────────────┐
+│ 1. PIPELINE HEALTH                                          │
+├─────────────────────────────────────────────────────────────┤
+│ □ Is the pipeline still running? (no crashes/hangs)         │
+│ □ Are processes consuming expected resources?               │
+│ □ Are log files showing normal progress?                    │
+│ □ Are intermediate outputs being generated?                 │
+│ □ Is disk space sufficient for remaining work?              │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 2. PLAN COMPLIANCE                                          │
+├─────────────────────────────────────────────────────────────┤
+│ □ Is execution following approved plan.md?                  │
+│ □ Are methods being applied as specified?                   │
+│ □ Are any unapproved deviations occurring?                  │
+│ □ Is the analysis on track to complete all planned items?   │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 3. INTERMEDIATE RESULTS VALIDATION                          │
+├─────────────────────────────────────────────────────────────┤
+│ □ Do intermediate outputs look clinically plausible?        │
+│ □ Are values within expected ranges?                        │
+│ □ Are there any obvious errors or anomalies?                │
+│ □ Do sample sizes match expectations?                       │
+│ □ Are statistical assumptions being met?                    │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 4. ERROR DETECTION                                          │
+├─────────────────────────────────────────────────────────────┤
+│ □ Any warnings or errors in logs?                           │
+│ □ Any NaN, Inf, or impossible values in outputs?            │
+│ □ Any unexpected missing data?                              │
+│ □ Any convergence failures in models?                       │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 5. RESOURCE MONITORING                                      │
+├─────────────────────────────────────────────────────────────┤
+│ □ CPU utilization — is it active or idle?                   │
+│ □ Memory usage — approaching limits?                        │
+│ □ Disk space — sufficient for remaining outputs?            │
+│ □ Network — API calls succeeding? Rate limits?              │
+│ □ GPU (if applicable) — utilized or idle?                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Resource Monitoring: Warning Signs & Actions
+
+| Resource | Warning Sign | Likely Problem | Action |
+|----------|--------------|----------------|--------|
+| **CPU** | Near 0% for extended time | Process stuck/deadlocked | Investigate logs, may need restart |
+| **CPU** | 100% but no progress | Infinite loop or inefficient code | Check logs, consider timeout |
+| **Memory** | >90% usage | Memory leak or large dataset | Clear caches, optimize, or increase RAM |
+| **Memory** | Steadily increasing | Memory leak | Fix leak, restart from checkpoint |
+| **Disk** | <10GB free | Running out of space | Delete temp files, compress outputs |
+| **Disk** | Rapid filling | Verbose logging or large intermediates | Reduce logging, clean up completed phases |
+| **Network** | Repeated timeouts | API issues, rate limiting | Add retries, check credentials |
+| **GPU** | 0% when expected active | CUDA error, wrong device | Check GPU drivers, device assignment |
+
+#### Disk Space Management
+
+When disk space is low, free space by cleaning up completed work:
+
+```bash
+# Check disk usage
+df -h .
+du -sh analysis/*
+
+# Safe to delete after phase completion:
+# 1. Temporary/intermediate files from COMPLETED phases
+rm -rf analysis/temp/phase_*_complete/
+rm -rf analysis/intermediate/*.tmp
+
+# 2. Duplicate outputs (keep only final versions)
+# 3. Raw log files (after extracting important info)
+# 4. Cached downloads (if re-downloadable)
+
+# NEVER delete:
+# - Raw input data
+# - Final outputs (figures, tables, reports)
+# - Scripts (even for completed phases)
+# - Monitoring logs
+```
+
+**Disk cleanup protocol:**
+1. Identify completed phases (all 3 checkpoints passed)
+2. Verify final outputs exist and are valid
+3. Delete temp/intermediate files from those phases only
+4. Document what was deleted in monitoring log
+5. Never delete files from in-progress or failed phases
+
+#### CPU Utilization Diagnostics
+
+```bash
+# Check if process is running and CPU usage
+ps aux | grep python  # or R, etc.
+top -p <PID>
+
+# If CPU near 0% for >10 minutes during expected computation:
+# → Process is likely stuck
+
+# Diagnostic steps:
+# 1. Check if waiting for I/O (disk, network)
+# 2. Check if waiting for user input (shouldn't happen in batch)
+# 3. Check logs for last activity
+# 4. Check if deadlocked on resource
+
+# If stuck, options:
+# A. Kill and restart from last checkpoint
+# B. Investigate root cause before restarting
+# C. Add timeout to prevent future hangs
+```
+
+#### Memory Monitoring
+
+```bash
+# Check memory usage
+free -h
+ps aux --sort=-%mem | head
+
+# If memory >90%:
+# 1. Check for memory leaks (steadily increasing usage)
+# 2. Consider processing data in chunks
+# 3. Clear Python/R object caches
+# 4. Restart process to free leaked memory
+
+# Python memory cleanup:
+import gc
+gc.collect()
+
+# R memory cleanup:
+gc()
+rm(list = ls()[grepl("^temp_", ls())])
+```
+
+#### Monitoring Log Template
+
+Document each monitoring check in `analysis/monitoring_log.md`:
+
+```markdown
+# Analysis Monitoring Log
+
+## Analysis: [Study Name]
+## Started: 2024-01-15 09:00
+## Expected Duration: ~18 hours
+
+---
+
+### Check 1: 2024-01-15 13:00 (Hour 4)
+
+**Pipeline Health:**
+- [x] Running normally
+- [x] Memory usage: 45% (acceptable)
+- [x] Disk space: 120GB free (sufficient)
+
+**Plan Compliance:**
+- [x] Following plan.md Phase 1-2
+- [x] No deviations
+
+**Intermediate Results:**
+- Phase 1 complete: n=450 samples processed ✓
+- Baseline characteristics look plausible ✓
+- No anomalies detected
+
+**Issues Found:** None
+
+**Action:** Continue monitoring
+
+---
+
+### Check 2: 2024-01-15 17:00 (Hour 8)
+
+**Pipeline Health:**
+- [x] Running normally
+- [x] Memory usage: 62% (acceptable)
+- [ ] Disk space: 45GB free (⚠ monitor closely)
+
+**Plan Compliance:**
+- [x] Following plan.md Phase 3
+- [x] No deviations
+
+**Intermediate Results:**
+- Phase 2 complete: survival analysis running ✓
+- ⚠ WARNING: One p-value exactly 0.000 — investigate
+
+**Issues Found:**
+1. P-value = 0.000 in cox_model_temp.csv — likely rounding, verify
+
+**Action:**
+- Investigate p-value issue before proceeding
+- Monitor disk space
+
+---
+
+### Check 3: 2024-01-15 17:30 (Issue Resolution)
+
+**Issue Investigation:**
+- P-value 0.000 was display rounding — actual value 2.3e-15 (valid)
+- Confirmed with independent calculation ✓
+
+**Resolution:** Issue resolved, continue
+
+---
+```
+
+#### Immediate Action Protocol
+
+When monitoring reveals issues:
+
+```
+IF issue found during monitoring:
+
+  SEVERITY: CRITICAL (pipeline failure, data corruption)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. STOP pipeline immediately                            │
+  │ 2. Preserve current state (don't overwrite)             │
+  │ 3. Diagnose root cause                                  │
+  │ 4. Fix issue                                            │
+  │ 5. Determine: restart from beginning OR resume?         │
+  │ 6. Get consensus if methodology change needed           │
+  │ 7. Restart/resume with fix applied                      │
+  │ 8. Delete corrupted outputs                             │
+  └─────────────────────────────────────────────────────────┘
+
+  SEVERITY: HIGH (invalid intermediate results)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. PAUSE pipeline (if possible without data loss)       │
+  │ 2. Investigate anomaly                                  │
+  │ 3. IF coding bug → fix and re-run affected phase        │
+  │ 4. IF methodology issue → get consensus on change       │
+  │ 5. Delete invalid outputs                               │
+  │ 6. Resume from last valid checkpoint                    │
+  └─────────────────────────────────────────────────────────┘
+
+  SEVERITY: MEDIUM (warnings, resource concerns)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. Document the warning                                 │
+  │ 2. Assess impact on final results                       │
+  │ 3. IF no impact → continue with monitoring              │
+  │ 4. IF potential impact → investigate before proceeding  │
+  │ 5. Free resources if needed (clear temp files, etc.)    │
+  └─────────────────────────────────────────────────────────┘
+
+  SEVERITY: LOW (minor anomalies)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. Log the observation                                  │
+  │ 2. Continue pipeline                                    │
+  │ 3. Review during final validation                       │
+  └─────────────────────────────────────────────────────────┘
+```
+
+#### Multi-Model Monitoring Review
+
+For critical long-running analyses, involve other models in monitoring:
+
+```bash
+# Quick monitoring consensus (non-blinded acceptable for speed)
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. Quick monitoring review.
+
+ANALYSIS: [name]
+HOUR: [X] of expected [Y]
+CURRENT PHASE: [phase]
+
+INTERMEDIATE RESULTS:
+- [key metrics so far]
+
+POTENTIAL CONCERNS:
+- [any anomalies observed]
+
+QUICK ASSESSMENT:
+- PIPELINE HEALTHY: Y/N
+- ON TRACK: Y/N
+- RESULTS PLAUSIBLE: Y/N
+- CONTINUE/STOP/INVESTIGATE: [recommendation]"
+```
+
+#### Automated Monitoring (When Possible)
+
+Set up automated checks for long pipelines:
+
+```python
+# Example: monitoring_check.py
+import os
+import datetime
+
+def monitoring_check():
+    checks = {
+        'pipeline_running': check_process_alive(),
+        'disk_space_ok': check_disk_space() > 20_000_000_000,  # 20GB
+        'no_error_logs': not check_for_errors_in_logs(),
+        'outputs_generating': check_recent_output_files(),
+        'memory_ok': check_memory_usage() < 0.9,
+    }
+
+    if not all(checks.values()):
+        alert_for_review(checks)
+
+    log_monitoring_check(checks)
+    return checks
+
+# Schedule to run every 2-4 hours
+```
+
+#### End-of-Monitoring Summary
+
+After analysis completes, summarize monitoring:
+
+```markdown
+## Monitoring Summary
+
+- **Total Checks:** 5
+- **Issues Found:** 2
+- **Issues Resolved:** 2
+- **Pipeline Restarts:** 0
+- **Plan Deviations:** 0
+
+**Confidence in Results:** HIGH
+- All intermediate results validated
+- No unresolved anomalies
+- Methodology followed as approved
+```
+
+---
 
 ### Domain-Specific Hypothesis Example (Oncology)
 
