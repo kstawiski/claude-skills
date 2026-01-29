@@ -1551,6 +1551,266 @@ ONLY THEN proceed to next phase
 
 ---
 
+### Long-Running Analysis Monitoring (2-6 Hour Intervals)
+
+> [!IMPORTANT]
+> **For analyses expected to run multiple hours or days, implement periodic monitoring every 2-6 hours.**
+>
+> Don't wait until the end to discover the pipeline failed at hour 2 of a 24-hour run.
+
+#### Why Periodic Monitoring?
+
+Long analyses can fail silently or produce invalid results that compound over time:
+- **Silent failures** — Script crashes, memory errors, network timeouts
+- **Data drift** — Intermediate results becoming invalid as pipeline progresses
+- **Resource exhaustion** — Disk space, memory, API rate limits
+- **Logical errors** — Bugs that only manifest after hours of processing
+- **Plan deviation** — Gradual drift from approved methodology
+
+**Catching issues early saves hours/days of wasted computation.**
+
+#### Monitoring Schedule
+
+| Analysis Duration | Monitoring Interval | Checkpoints |
+|-------------------|---------------------|-------------|
+| 2-4 hours | Every 2 hours | 1-2 checks |
+| 4-12 hours | Every 3-4 hours | 2-4 checks |
+| 12-24 hours | Every 4-6 hours | 3-6 checks |
+| 24+ hours | Every 6 hours | 4+ checks |
+
+#### What to Check During Monitoring
+
+```
+PERIODIC MONITORING CHECKLIST (every 2-6 hours):
+
+┌─────────────────────────────────────────────────────────────┐
+│ 1. PIPELINE HEALTH                                          │
+├─────────────────────────────────────────────────────────────┤
+│ □ Is the pipeline still running? (no crashes/hangs)         │
+│ □ Are processes consuming expected resources?               │
+│ □ Are log files showing normal progress?                    │
+│ □ Are intermediate outputs being generated?                 │
+│ □ Is disk space sufficient for remaining work?              │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 2. PLAN COMPLIANCE                                          │
+├─────────────────────────────────────────────────────────────┤
+│ □ Is execution following approved plan.md?                  │
+│ □ Are methods being applied as specified?                   │
+│ □ Are any unapproved deviations occurring?                  │
+│ □ Is the analysis on track to complete all planned items?   │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 3. INTERMEDIATE RESULTS VALIDATION                          │
+├─────────────────────────────────────────────────────────────┤
+│ □ Do intermediate outputs look clinically plausible?        │
+│ □ Are values within expected ranges?                        │
+│ □ Are there any obvious errors or anomalies?                │
+│ □ Do sample sizes match expectations?                       │
+│ □ Are statistical assumptions being met?                    │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 4. ERROR DETECTION                                          │
+├─────────────────────────────────────────────────────────────┤
+│ □ Any warnings or errors in logs?                           │
+│ □ Any NaN, Inf, or impossible values in outputs?            │
+│ □ Any unexpected missing data?                              │
+│ □ Any convergence failures in models?                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Monitoring Log Template
+
+Document each monitoring check in `analysis/monitoring_log.md`:
+
+```markdown
+# Analysis Monitoring Log
+
+## Analysis: [Study Name]
+## Started: 2024-01-15 09:00
+## Expected Duration: ~18 hours
+
+---
+
+### Check 1: 2024-01-15 13:00 (Hour 4)
+
+**Pipeline Health:**
+- [x] Running normally
+- [x] Memory usage: 45% (acceptable)
+- [x] Disk space: 120GB free (sufficient)
+
+**Plan Compliance:**
+- [x] Following plan.md Phase 1-2
+- [x] No deviations
+
+**Intermediate Results:**
+- Phase 1 complete: n=450 samples processed ✓
+- Baseline characteristics look plausible ✓
+- No anomalies detected
+
+**Issues Found:** None
+
+**Action:** Continue monitoring
+
+---
+
+### Check 2: 2024-01-15 17:00 (Hour 8)
+
+**Pipeline Health:**
+- [x] Running normally
+- [x] Memory usage: 62% (acceptable)
+- [ ] Disk space: 45GB free (⚠ monitor closely)
+
+**Plan Compliance:**
+- [x] Following plan.md Phase 3
+- [x] No deviations
+
+**Intermediate Results:**
+- Phase 2 complete: survival analysis running ✓
+- ⚠ WARNING: One p-value exactly 0.000 — investigate
+
+**Issues Found:**
+1. P-value = 0.000 in cox_model_temp.csv — likely rounding, verify
+
+**Action:**
+- Investigate p-value issue before proceeding
+- Monitor disk space
+
+---
+
+### Check 3: 2024-01-15 17:30 (Issue Resolution)
+
+**Issue Investigation:**
+- P-value 0.000 was display rounding — actual value 2.3e-15 (valid)
+- Confirmed with independent calculation ✓
+
+**Resolution:** Issue resolved, continue
+
+---
+```
+
+#### Immediate Action Protocol
+
+When monitoring reveals issues:
+
+```
+IF issue found during monitoring:
+
+  SEVERITY: CRITICAL (pipeline failure, data corruption)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. STOP pipeline immediately                            │
+  │ 2. Preserve current state (don't overwrite)             │
+  │ 3. Diagnose root cause                                  │
+  │ 4. Fix issue                                            │
+  │ 5. Determine: restart from beginning OR resume?         │
+  │ 6. Get consensus if methodology change needed           │
+  │ 7. Restart/resume with fix applied                      │
+  │ 8. Delete corrupted outputs                             │
+  └─────────────────────────────────────────────────────────┘
+
+  SEVERITY: HIGH (invalid intermediate results)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. PAUSE pipeline (if possible without data loss)       │
+  │ 2. Investigate anomaly                                  │
+  │ 3. IF coding bug → fix and re-run affected phase        │
+  │ 4. IF methodology issue → get consensus on change       │
+  │ 5. Delete invalid outputs                               │
+  │ 6. Resume from last valid checkpoint                    │
+  └─────────────────────────────────────────────────────────┘
+
+  SEVERITY: MEDIUM (warnings, resource concerns)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. Document the warning                                 │
+  │ 2. Assess impact on final results                       │
+  │ 3. IF no impact → continue with monitoring              │
+  │ 4. IF potential impact → investigate before proceeding  │
+  │ 5. Free resources if needed (clear temp files, etc.)    │
+  └─────────────────────────────────────────────────────────┘
+
+  SEVERITY: LOW (minor anomalies)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. Log the observation                                  │
+  │ 2. Continue pipeline                                    │
+  │ 3. Review during final validation                       │
+  └─────────────────────────────────────────────────────────┘
+```
+
+#### Multi-Model Monitoring Review
+
+For critical long-running analyses, involve other models in monitoring:
+
+```bash
+# Quick monitoring consensus (non-blinded acceptable for speed)
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. Quick monitoring review.
+
+ANALYSIS: [name]
+HOUR: [X] of expected [Y]
+CURRENT PHASE: [phase]
+
+INTERMEDIATE RESULTS:
+- [key metrics so far]
+
+POTENTIAL CONCERNS:
+- [any anomalies observed]
+
+QUICK ASSESSMENT:
+- PIPELINE HEALTHY: Y/N
+- ON TRACK: Y/N
+- RESULTS PLAUSIBLE: Y/N
+- CONTINUE/STOP/INVESTIGATE: [recommendation]"
+```
+
+#### Automated Monitoring (When Possible)
+
+Set up automated checks for long pipelines:
+
+```python
+# Example: monitoring_check.py
+import os
+import datetime
+
+def monitoring_check():
+    checks = {
+        'pipeline_running': check_process_alive(),
+        'disk_space_ok': check_disk_space() > 20_000_000_000,  # 20GB
+        'no_error_logs': not check_for_errors_in_logs(),
+        'outputs_generating': check_recent_output_files(),
+        'memory_ok': check_memory_usage() < 0.9,
+    }
+
+    if not all(checks.values()):
+        alert_for_review(checks)
+
+    log_monitoring_check(checks)
+    return checks
+
+# Schedule to run every 2-4 hours
+```
+
+#### End-of-Monitoring Summary
+
+After analysis completes, summarize monitoring:
+
+```markdown
+## Monitoring Summary
+
+- **Total Checks:** 5
+- **Issues Found:** 2
+- **Issues Resolved:** 2
+- **Pipeline Restarts:** 0
+- **Plan Deviations:** 0
+
+**Confidence in Results:** HIGH
+- All intermediate results validated
+- No unresolved anomalies
+- Methodology followed as approved
+```
+
+---
+
 ### Domain-Specific Hypothesis Example (Oncology)
 
 For oncology research, you may want to add a cancer type hypothesis step:
