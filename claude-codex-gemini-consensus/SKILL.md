@@ -245,6 +245,57 @@ When planning, Claude generates this file for later execution:
 
 ---
 
+## Output Validation: Zero Tolerance for Invalid Results
+
+> [!CAUTION]
+> **MANDATORY: Continuous output validation throughout all analyses.**
+
+**Regularly check if output is correct/valid, clinically and scientifically plausible. Fix all issues as they arise. No compromises or deferred analysis.**
+
+### Requirements
+
+1. **Validate at every step** — Do not wait until the end to check results
+2. **Clinical plausibility** — Results must make sense in real-world clinical context
+3. **Scientific validity** — Statistical methods appropriate, assumptions met, results interpretable
+4. **Immediate correction** — Fix issues when discovered, not later
+5. **No deferred analysis** — If an analysis is planned, it MUST be completed or the plan MUST be changed
+6. **Consensus on corrections** — All fixes require validation from Claude + Codex + Gemini
+
+### When Issues Are Found
+
+```
+IF output is invalid/implausible:
+  1. STOP immediately
+  2. Diagnose the issue
+  3. Fix the root cause
+  4. Re-run affected analyses
+  5. Validate corrected output with all agents
+  6. Continue only after consensus approval
+```
+
+### Resource Flexibility
+
+**You can install or download whatever you need.** If a required package, tool, dataset, or reference is missing:
+- Install packages via pip, conda, npm, etc.
+- Download reference data from authoritative sources
+- Fetch literature via web search
+- Use any available MCP tools
+
+Do not let missing resources block progress — acquire what you need and continue.
+
+### Alternative Approaches
+
+If an analysis cannot be completed as planned:
+1. **Document why** — Explain the blocker clearly
+2. **Propose alternative** — Suggest equivalent/better approach
+3. **Get consensus** — All agents must approve the alternative
+4. **Update plan** — Modify analysis/plan.md to reflect the change
+5. **Execute alternative** — Complete the revised analysis
+
+**No analysis should be skipped without consensus on an alternative approach.**
+
+---
+
 ## PREFERRED: Blinded Consensus with Argumentation
 
 > [!IMPORTANT]
