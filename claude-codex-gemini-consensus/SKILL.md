@@ -1620,6 +1620,105 @@ PERIODIC MONITORING CHECKLIST (every 2-6 hours):
 │ □ Any unexpected missing data?                              │
 │ □ Any convergence failures in models?                       │
 └─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 5. RESOURCE MONITORING                                      │
+├─────────────────────────────────────────────────────────────┤
+│ □ CPU utilization — is it active or idle?                   │
+│ □ Memory usage — approaching limits?                        │
+│ □ Disk space — sufficient for remaining outputs?            │
+│ □ Network — API calls succeeding? Rate limits?              │
+│ □ GPU (if applicable) — utilized or idle?                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Resource Monitoring: Warning Signs & Actions
+
+| Resource | Warning Sign | Likely Problem | Action |
+|----------|--------------|----------------|--------|
+| **CPU** | Near 0% for extended time | Process stuck/deadlocked | Investigate logs, may need restart |
+| **CPU** | 100% but no progress | Infinite loop or inefficient code | Check logs, consider timeout |
+| **Memory** | >90% usage | Memory leak or large dataset | Clear caches, optimize, or increase RAM |
+| **Memory** | Steadily increasing | Memory leak | Fix leak, restart from checkpoint |
+| **Disk** | <10GB free | Running out of space | Delete temp files, compress outputs |
+| **Disk** | Rapid filling | Verbose logging or large intermediates | Reduce logging, clean up completed phases |
+| **Network** | Repeated timeouts | API issues, rate limiting | Add retries, check credentials |
+| **GPU** | 0% when expected active | CUDA error, wrong device | Check GPU drivers, device assignment |
+
+#### Disk Space Management
+
+When disk space is low, free space by cleaning up completed work:
+
+```bash
+# Check disk usage
+df -h .
+du -sh analysis/*
+
+# Safe to delete after phase completion:
+# 1. Temporary/intermediate files from COMPLETED phases
+rm -rf analysis/temp/phase_*_complete/
+rm -rf analysis/intermediate/*.tmp
+
+# 2. Duplicate outputs (keep only final versions)
+# 3. Raw log files (after extracting important info)
+# 4. Cached downloads (if re-downloadable)
+
+# NEVER delete:
+# - Raw input data
+# - Final outputs (figures, tables, reports)
+# - Scripts (even for completed phases)
+# - Monitoring logs
+```
+
+**Disk cleanup protocol:**
+1. Identify completed phases (all 3 checkpoints passed)
+2. Verify final outputs exist and are valid
+3. Delete temp/intermediate files from those phases only
+4. Document what was deleted in monitoring log
+5. Never delete files from in-progress or failed phases
+
+#### CPU Utilization Diagnostics
+
+```bash
+# Check if process is running and CPU usage
+ps aux | grep python  # or R, etc.
+top -p <PID>
+
+# If CPU near 0% for >10 minutes during expected computation:
+# → Process is likely stuck
+
+# Diagnostic steps:
+# 1. Check if waiting for I/O (disk, network)
+# 2. Check if waiting for user input (shouldn't happen in batch)
+# 3. Check logs for last activity
+# 4. Check if deadlocked on resource
+
+# If stuck, options:
+# A. Kill and restart from last checkpoint
+# B. Investigate root cause before restarting
+# C. Add timeout to prevent future hangs
+```
+
+#### Memory Monitoring
+
+```bash
+# Check memory usage
+free -h
+ps aux --sort=-%mem | head
+
+# If memory >90%:
+# 1. Check for memory leaks (steadily increasing usage)
+# 2. Consider processing data in chunks
+# 3. Clear Python/R object caches
+# 4. Restart process to free leaked memory
+
+# Python memory cleanup:
+import gc
+gc.collect()
+
+# R memory cleanup:
+gc()
+rm(list = ls()[grepl("^temp_", ls())])
 ```
 
 #### Monitoring Log Template
