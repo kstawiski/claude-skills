@@ -44,8 +44,10 @@ ai-skills-update
 
 | Skill | Description |
 |-------|-------------|
+| [bioinformatics-project-setup](bioinformatics-project-setup/) | Standardized project scaffolding for bioinformatics/computational biology with data separation and consensus workflow integration |
 | [claude-codex-gemini-consensus](claude-codex-gemini-consensus/) | Multi-AI consensus workflow for code review, scientific analysis, and reports |
 | [humanizer](humanizer/) | Remove AI-generated writing patterns from text for natural, human-like output |
+| [scientific-figures](scientific-figures/) | Publication-ready figure creation with technical requirements, accessibility, and multi-model validation |
 | [prostate-cancer](prostate-cancer/) | Prostate cancer clinical research domain knowledge |
 | [b56-prostate-cancer-programme](b56-prostate-cancer-programme/) | B56 prostate cancer programme specifics |
 
