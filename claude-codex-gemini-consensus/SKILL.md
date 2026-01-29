@@ -1315,6 +1315,242 @@ For clinical research projects requiring publication-ready outputs, follow this 
 
 **See [references/scientific-analysis-workflow.md](references/scientific-analysis-workflow.md) for complete workflow.**
 
+---
+
+### Phase-Based Execution with Consensus Gates
+
+> [!IMPORTANT]
+> **Every analysis phase requires THREE consensus checkpoints:**
+> 1. **Pre-implementation planning** — How will we implement this phase?
+> 2. **Code review** — Is the implementation correct?
+> 3. **Results validation** — Are results clinically/scientifically valid?
+>
+> **Cannot proceed to next phase until ALL models approve current phase.**
+
+#### Phase Execution Protocol
+
+For each planned analysis (from analysis/plan.md):
+
+```
+PHASE EXECUTION LOOP:
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │ CHECKPOINT 1: PRE-IMPLEMENTATION PLANNING                   │
+  ├─────────────────────────────────────────────────────────────┤
+  │ 1. Read analysis requirements from plan.md                  │
+  │ 2. Draft implementation approach (methods, packages, steps) │
+  │ 3. Submit to blinded consensus:                             │
+  │    - Is this the correct statistical method?                │
+  │    - Are assumptions appropriate for this data?             │
+  │    - Is the implementation approach sound?                  │
+  │ 4. ALL models must approve before coding begins             │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │ IMPLEMENTATION                                              │
+  ├─────────────────────────────────────────────────────────────┤
+  │ 1. Write code following approved implementation plan        │
+  │ 2. Run analysis and capture outputs                         │
+  │ 3. Document any deviations (require re-consensus if major)  │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │ CHECKPOINT 2: CODE REVIEW (Blinded)                         │
+  ├─────────────────────────────────────────────────────────────┤
+  │ 1. Submit code to blinded consensus review                  │
+  │ 2. Reviewers check:                                         │
+  │    - Does code match approved implementation plan?          │
+  │    - Are there bugs, errors, or logic flaws?                │
+  │    - Are statistical methods implemented correctly?         │
+  │    - Are edge cases handled?                                │
+  │ 3. ALL models must approve OR issues must be fixed          │
+  │ 4. If fixes needed → fix → re-review until approved         │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │ CHECKPOINT 3: RESULTS VALIDATION (Blinded)                  │
+  ├─────────────────────────────────────────────────────────────┤
+  │ 1. Submit results to blinded consensus review               │
+  │ 2. Reviewers assess:                                        │
+  │    - Are results clinically plausible?                      │
+  │    - Are results scientifically valid?                      │
+  │    - Do values fall within expected ranges?                 │
+  │    - Are results consistent with literature?                │
+  │    - Do results answer the planned research question?       │
+  │ 3. ALL models must approve OR analysis must be re-done      │
+  │ 4. If invalid → diagnose → fix → re-run → re-validate       │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │ PHASE GATE: PROCEED OR BLOCK                                │
+  ├─────────────────────────────────────────────────────────────┤
+  │ IF all 3 checkpoints passed:                                │
+  │   → Mark phase complete in plan.md                          │
+  │   → Proceed to next phase                                   │
+  │ ELSE:                                                       │
+  │   → DO NOT PROCEED                                          │
+  │   → Fix issues and re-validate                              │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+#### Checkpoint 1: Pre-Implementation Planning Consensus
+
+Before writing ANY code for a phase:
+
+```bash
+# Blinded consensus on implementation approach
+./scripts/blinded-consensus.sh plan implementation_plan.md --rounds 2
+
+# OR manual blinded review with specific questions:
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. Blinded review.
+
+PHASE: [Phase name from plan.md]
+OBJECTIVE: [What this analysis should answer]
+PROPOSED IMPLEMENTATION:
+- Method: [statistical test/model]
+- Packages: [R/Python packages]
+- Steps: [1. ..., 2. ..., 3. ...]
+
+REVIEW QUESTIONS:
+1. Is this the correct statistical method for this data/question?
+2. Are the assumptions of this method met by our data?
+3. Is the proposed implementation approach sound?
+4. Are there methodological concerns?
+
+OUTPUT:
+- METHOD APPROPRIATE: Y/N | [reasoning]
+- ASSUMPTIONS VALID: Y/N | [reasoning]
+- IMPLEMENTATION SOUND: Y/N | [reasoning]
+- CONCERNS: [list or 'None']
+- VERDICT: APPROVE / REJECT
+- REQUIRED CHANGES: [if any]"
+```
+
+#### Checkpoint 2: Code Review Consensus
+
+After implementation, before accepting results:
+
+```bash
+# Blinded code review
+./scripts/blinded-consensus.sh code analysis/scripts/phase_X.py --rounds 2
+
+# OR manual with specific checks:
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. Blinded code review.
+
+PHASE: [Phase name]
+APPROVED IMPLEMENTATION PLAN: [summary]
+ACTUAL CODE: [paste code]
+
+REVIEW QUESTIONS:
+1. Does code match the approved implementation plan?
+2. Are statistical methods implemented correctly?
+3. Are there bugs, logic errors, or edge case failures?
+4. Are results being calculated/reported correctly?
+
+OUTPUT:
+- MATCHES PLAN: Y/N | [deviations if any]
+- IMPLEMENTATION CORRECT: Y/N | [errors if any]
+- BUGS FOUND: [list or 'None']
+- VERDICT: APPROVE / REJECT
+- REQUIRED FIXES: [if any]"
+```
+
+#### Checkpoint 3: Results Validation Consensus
+
+After code is approved, validate the actual results:
+
+```bash
+# Blinded results validation
+./scripts/blinded-consensus.sh analysis results/phase_X/ --rounds 2 --search
+
+# OR manual with clinical/scientific assessment:
+"REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for literature. Blinded results review.
+
+PHASE: [Phase name]
+RESEARCH QUESTION: [What this should answer]
+RESULTS:
+- [Key finding 1]
+- [Key finding 2]
+- [Statistics, p-values, CIs]
+
+VALIDATION QUESTIONS:
+1. Are these results clinically plausible?
+2. Are these results scientifically valid?
+3. Do values fall within expected ranges for this domain?
+4. Are results consistent with published literature?
+5. Do results actually answer the research question?
+
+OUTPUT:
+- CLINICALLY PLAUSIBLE: Y/N | [reasoning]
+- SCIENTIFICALLY VALID: Y/N | [reasoning]
+- WITHIN EXPECTED RANGES: Y/N | [suspicious values if any]
+- LITERATURE CONSISTENT: Y/N | [PMIDs for comparison]
+- ANSWERS QUESTION: Y/N | [reasoning]
+- VERDICT: VALID / INVALID
+- CONCERNS: [list or 'None']"
+```
+
+#### Phase Tracking in plan.md
+
+Track checkpoint status for each phase:
+
+```markdown
+### Phase 3: Survival Analysis
+
+**Objective:** Compare OS between treatment groups
+
+**Status:** ✓ COMPLETE
+
+**Checkpoints:**
+- [x] Pre-implementation planning approved (2024-01-15)
+  - Method: Cox PH with Schoenfeld residual check
+  - Reviewers: A ✓, B ✓, C ✓
+- [x] Code review passed (2024-01-15)
+  - Script: analysis/scripts/fig03_survival.py
+  - Reviewers: A ✓, B ✓, C ✓
+- [x] Results validated (2024-01-15)
+  - HR: 0.72 (95% CI: 0.58-0.89), p=0.002
+  - Clinical plausibility: Confirmed (consistent with PMID:12345678)
+  - Reviewers: A ✓, B ✓, C ✓
+
+**Outputs:**
+- analysis/figures/fig03_km_curve.png
+- analysis/tables/tab03_cox_model.csv
+```
+
+#### What To Do When Checkpoints Fail
+
+| Checkpoint | Failure | Action |
+|------------|---------|--------|
+| Pre-implementation | Wrong method proposed | Revise method, re-submit for consensus |
+| Pre-implementation | Assumptions not met | Propose alternative method, get new consensus |
+| Code review | Bugs found | Fix bugs, re-submit for review |
+| Code review | Doesn't match plan | Either fix code OR get consensus on deviation |
+| Results validation | Clinically implausible | Investigate data/code, fix root cause, re-run |
+| Results validation | Scientifically invalid | Review methodology, may need to restart phase |
+| Results validation | Inconsistent with literature | Document and explain OR investigate for errors |
+
+#### Mandatory Phase Gate Rule
+
+> [!CAUTION]
+> **HARD STOP: Do not proceed to the next phase until ALL THREE checkpoints pass for the current phase.**
+>
+> Skipping checkpoints or proceeding with unresolved issues propagates errors through the entire analysis.
+
+```
+IF checkpoint fails:
+  1. Document the failure
+  2. Diagnose root cause
+  3. Implement fix
+  4. Re-run affected work
+  5. Re-submit for consensus
+  6. REPEAT until checkpoint passes
+
+ONLY THEN proceed to next phase
+```
+
+---
+
 ### Domain-Specific Hypothesis Example (Oncology)
 
 For oncology research, you may want to add a cancer type hypothesis step:
