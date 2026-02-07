@@ -890,12 +890,20 @@ This provides **defense in depth**: architectural limits + prompt-based instruct
 
 ## Quick Reference
 
+### Preferred Models (Default)
+
+- Codex: `gpt-5.3-codex` with `model_reasoning_effort="xhigh"` (use `"high"` for faster runs)
+- Claude: `opus` alias (preferred: Opus 4.6 family)
+- Gemini: `gemini-3-pro-preview`
+
+These defaults are built into `scripts/review.sh` and `scripts/blinded-consensus.sh` and can be overridden with env vars (`CODEX_MODEL`, `CODEX_REASONING_EFFORT`, `CLAUDE_MODEL`, `GEMINI_MODEL`).
+
 ### Claude Code CLI (Full Permissions - Concise Output)
 
 ```bash
 # Standard command with concise output request
 claude --dangerously-skip-permissions \
-  
+  --model opus \
   -p "BE CONCISE. Output only: findings, issues, recommendations. No preamble.
 
 YOUR_PROMPT"
@@ -916,7 +924,8 @@ claude --dangerously-skip-permissions \
 ```bash
 # Standard command with concise output request
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  \
+  --model gpt-5.3-codex \
+  -c 'model_reasoning_effort="xhigh"' \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "BE CONCISE. Output only: findings, issues, recommendations. No preamble.
@@ -925,14 +934,16 @@ YOUR_PROMPT"
 
 # JSON output for minimal, structured response
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  \
+  --model gpt-5.3-codex \
+  -c 'model_reasoning_effort="xhigh"' \
   --skip-git-repo-check \
   --json \
   "YOUR_PROMPT"
 
 # With web search
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  \
+  --model gpt-5.3-codex \
+  -c 'model_reasoning_effort="high"' \
   --skip-git-repo-check \
   --search \
   "BE CONCISE. YOUR_PROMPT"
@@ -948,14 +959,14 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 ```bash
 # Standard with concise instruction
 gemini --yolo \
-  \
+  --model gemini-3-pro-preview \
   -p "BE CONCISE. Bullet points only. No preamble.
 
 YOUR_PROMPT"
 
 # JSON output for scripting
 gemini --yolo \
-  \
+  --model gemini-3-pro-preview \
   --output-format json \
   -p "YOUR_PROMPT"
 ```
@@ -995,7 +1006,8 @@ For maximum context savings, use strict output limits:
 ```bash
 # Codex with strict format
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  \
+  --model gpt-5.3-codex \
+  -c 'model_reasoning_effort="high"' \
   --skip-git-repo-check \
   "STRICT FORMAT. Max 10 lines. No prose.
 
@@ -1008,7 +1020,8 @@ VERDICT: [word]"
 
 # Pipe to head for hard truncation (if output still verbose)
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  \
+  --model gpt-5.3-codex \
+  -c 'model_reasoning_effort="high"' \
   --skip-git-repo-check \
   "YOUR_PROMPT" | head -20
 ```
@@ -2075,18 +2088,33 @@ gemini --help
 > CLI tools should be run with a timeout of **at least 30 minutes** per task. Complex analyses, code reviews, and consensus workflows may require extended execution time.
 
 ```bash
-# Example with timeout command
-timeout 30m codex exec --yolo "YOUR_TASK"
-timeout 30m gemini --yolo -p "YOUR_TASK"
-timeout 30m claude --dangerously-skip-permissions -p "YOUR_TASK"
+# Cross-platform timeout helper (Linux: timeout, macOS: gtimeout if installed)
+if command -v timeout >/dev/null 2>&1; then
+  TIMEOUT_CMD=(timeout 30m)
+elif command -v gtimeout >/dev/null 2>&1; then
+  TIMEOUT_CMD=(gtimeout 30m)
+else
+  TIMEOUT_CMD=()  # no timeout utility available
+fi
+
+"${TIMEOUT_CMD[@]}" codex exec --dangerously-bypass-approvals-and-sandbox --model gpt-5.3-codex "YOUR_TASK"
+"${TIMEOUT_CMD[@]}" gemini --yolo --model gemini-3-pro-preview -p "YOUR_TASK"
+"${TIMEOUT_CMD[@]}" claude --dangerously-skip-permissions --model opus -p "YOUR_TASK"
 ```
+
+## Cross-Platform Notes (Linux + macOS)
+
+- `scripts/blinded-consensus.sh` is compatible with macOS default Bash 3.2 (no associative arrays required).
+- All helper scripts use `#!/usr/bin/env bash`.
+- Timeout examples include Linux (`timeout`) and macOS (`gtimeout`) handling.
 
 ## Recommended Configurations
 
 ### Codex Config (~/.codex/config.toml)
 
 ```toml
-model = "gpt-5.2-codex"
+model = "gpt-5.3-codex"
+model_reasoning_effort = "xhigh"  # use "high" for faster reviews
 approval_policy = "never"  # Full auto for consensus workflows
 sandbox_mode = "danger-full-access"
 web_search = true  # Always enable web search

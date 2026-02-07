@@ -142,7 +142,7 @@ Document findings:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
@@ -171,7 +171,7 @@ Compare findings. For disagreements:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 
@@ -216,7 +216,7 @@ For each agreed issue, propose a fix:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
 
@@ -239,7 +239,7 @@ If Pal raises concerns, discuss and adjust:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 
@@ -262,7 +262,7 @@ Implement the agreed fixes in code.
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
@@ -350,7 +350,7 @@ DO NOT STOP UNTIL ALL MODULES ARE [DONE]
 ### Initial Review Request
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
 
@@ -364,7 +364,7 @@ Code: [PASTE_CODE]"
 ### Disagreement Resolution
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 
@@ -374,7 +374,7 @@ BE CONCISE. Is [ISSUE] valid? Output: Y/N | REASON"
 ### Fix Validation
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 
@@ -384,7 +384,7 @@ BE CONCISE. Is fix for [ISSUE] correct? Output: Y/N | CONCERN"
 ### Fix Verification
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
 

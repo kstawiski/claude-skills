@@ -18,17 +18,101 @@ set -euo pipefail
 
 # Configuration
 MAX_ROUNDS="${MAX_ROUNDS:-3}"
+CODEX_MODEL="${CODEX_MODEL:-gpt-5.3-codex}"
+CODEX_REASONING_EFFORT="${CODEX_REASONING_EFFORT:-xhigh}" # allowed: high|xhigh
+CLAUDE_MODEL="${CLAUDE_MODEL:-opus}" # Opus 4.6 alias on current Claude CLI
+GEMINI_MODEL="${GEMINI_MODEL:-gemini-3-pro-preview}"
+REVIEW_TIMEOUT_SEC="${REVIEW_TIMEOUT_SEC:-1800}"
+MAX_INPUT_BYTES="${MAX_INPUT_BYTES:-200000}"
+KEEP_CONSENSUS_DIR="${KEEP_CONSENSUS_DIR:-0}"
+
+if ! [[ "$REVIEW_TIMEOUT_SEC" =~ ^[0-9]+$ ]] || [[ "$REVIEW_TIMEOUT_SEC" -lt 1 ]]; then
+    echo "Warning: REVIEW_TIMEOUT_SEC must be a positive integer. Falling back to 1800." >&2
+    REVIEW_TIMEOUT_SEC=1800
+fi
+if ! [[ "$MAX_INPUT_BYTES" =~ ^[0-9]+$ ]] || [[ "$MAX_INPUT_BYTES" -lt 1024 ]]; then
+    echo "Warning: MAX_INPUT_BYTES must be >= 1024. Falling back to 200000." >&2
+    MAX_INPUT_BYTES=200000
+fi
+if ! [[ "$KEEP_CONSENSUS_DIR" =~ ^[01]$ ]]; then
+    echo "Warning: KEEP_CONSENSUS_DIR must be 0 or 1. Falling back to 0." >&2
+    KEEP_CONSENSUS_DIR=0
+fi
+
+case "$CODEX_REASONING_EFFORT" in
+    high|xhigh) ;;
+    *)
+        echo "Warning: CODEX_REASONING_EFFORT must be high or xhigh. Falling back to xhigh." >&2
+        CODEX_REASONING_EFFORT="xhigh"
+        ;;
+esac
+
+TIMEOUT_BIN=""
+if command -v timeout >/dev/null 2>&1; then
+    TIMEOUT_BIN="timeout"
+elif command -v gtimeout >/dev/null 2>&1; then
+    TIMEOUT_BIN="gtimeout"
+fi
+PERL_BIN=""
+if command -v perl >/dev/null 2>&1; then
+    PERL_BIN="perl"
+fi
+NO_TIMEOUT_WARNING_EMITTED=0
+
+run_with_timeout() {
+    if [[ -n "$TIMEOUT_BIN" ]]; then
+        "$TIMEOUT_BIN" "$REVIEW_TIMEOUT_SEC" "$@"
+        return $?
+    fi
+    if [[ -n "$PERL_BIN" ]]; then
+        "$PERL_BIN" -e '
+my $t = shift @ARGV;
+my $pid = fork();
+die "fork failed: $!" unless defined $pid;
+if ($pid == 0) { exec @ARGV or die "exec failed: $!"; }
+my $timed_out = 0;
+local $SIG{ALRM} = sub {
+  $timed_out = 1;
+  kill "TERM", $pid;
+  sleep 1;
+  kill "KILL", $pid;
+};
+alarm $t;
+waitpid($pid, 0);
+alarm 0;
+if ($timed_out) { exit 124; }
+if ($? == -1) { exit 1; }
+if ($? & 127) { exit 128 + ($? & 127); }
+exit($? >> 8);
+' "$REVIEW_TIMEOUT_SEC" "$@"
+        return $?
+    fi
+    if [[ "$NO_TIMEOUT_WARNING_EMITTED" -eq 0 ]]; then
+        echo "Warning: no timeout utility found (timeout/gtimeout/perl). Running without timeout." >&2
+        NO_TIMEOUT_WARNING_EMITTED=1
+    fi
+    "$@"
+}
+
 # Check if CONSENSUS_DIR was set externally
 if [[ -n "${CONSENSUS_DIR:-}" ]]; then
     CONSENSUS_DIR_EXTERNAL=1
 else
-    CONSENSUS_DIR=$(mktemp -d /tmp/consensus.XXXXXX)
+    if CONSENSUS_DIR="$(mktemp -d 2>/dev/null)"; then
+        :
+    else
+        # macOS/BSD fallback.
+        CONSENSUS_DIR="$(mktemp -d -t consensus)"
+    fi
     CONSENSUS_DIR_EXTERNAL=""
 fi
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Cleanup trap - only remove if we created it
 cleanup() {
+    if [[ "$KEEP_CONSENSUS_DIR" -eq 1 ]]; then
+        return
+    fi
     if [[ -z "$CONSENSUS_DIR_EXTERNAL" ]] && [[ -d "$CONSENSUS_DIR" ]]; then
         echo "Cleaning up temporary directory: $CONSENSUS_DIR" >&2
         rm -rf "$CONSENSUS_DIR"
@@ -51,6 +135,11 @@ Options:
   --search       Enable web search for reviewers
   --output FILE  Write consensus report to file
   --cd PATH      Working directory for agents
+
+Environment overrides:
+  REVIEW_TIMEOUT_SEC   Per-agent timeout in seconds (default: 1800)
+  MAX_INPUT_BYTES      Max bytes loaded from input file/text (default: 200000)
+  KEEP_CONSENSUS_DIR   Keep temp discussion dir after exit: 0|1 (default: 0)
 
 Examples:
   ./blinded-consensus.sh plan analysis/plan.md
@@ -80,6 +169,10 @@ CD_PATH="$(pwd)"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --rounds)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --rounds requires a positive integer." >&2
+                exit 1
+            fi
             MAX_ROUNDS="$2"
             shift 2
             ;;
@@ -88,19 +181,36 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --output)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --output requires a file path." >&2
+                exit 1
+            fi
             OUTPUT_FILE="$2"
             shift 2
             ;;
         --cd)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --cd requires a directory path." >&2
+                exit 1
+            fi
             CD_PATH="$2"
             shift 2
             ;;
         *)
-            echo "Unknown option: $1"
+            echo "Unknown option: $1" >&2
             usage
             ;;
     esac
 done
+
+if ! [[ "$MAX_ROUNDS" =~ ^[0-9]+$ ]] || [[ "$MAX_ROUNDS" -lt 1 ]]; then
+    echo "Error: --rounds must be a positive integer." >&2
+    exit 1
+fi
+if [[ ! -d "$CD_PATH" ]]; then
+    echo "Error: --cd path does not exist or is not a directory: $CD_PATH" >&2
+    exit 1
+fi
 
 # Validate mode
 case "$MODE" in
@@ -111,13 +221,41 @@ case "$MODE" in
         ;;
 esac
 
-# Read input content
+# Read input content (bounded)
+read_input_content() {
+    local src="$1"
+    if [[ -f "$src" ]]; then
+        local size
+        size="$(wc -c < "$src" | tr -d '[:space:]')"
+        if [[ "$size" -gt "$MAX_INPUT_BYTES" ]]; then
+            head -c "$MAX_INPUT_BYTES" -- "$src"
+            printf '\n\n[TRUNCATED: original file size %s bytes exceeded MAX_INPUT_BYTES=%s]\n' "$size" "$MAX_INPUT_BYTES"
+        else
+            cat -- "$src"
+        fi
+    else
+        local LC_ALL=C
+        local text_len
+        text_len="${#src}"
+        if [[ "$text_len" -gt "$MAX_INPUT_BYTES" ]]; then
+            printf '%s' "${src:0:$MAX_INPUT_BYTES}"
+        else
+            printf '%s' "$src"
+        fi
+        if [[ "$text_len" -gt "$MAX_INPUT_BYTES" ]]; then
+            printf '\n\n[TRUNCATED: input text length %s bytes exceeded MAX_INPUT_BYTES=%s]\n' "$text_len" "$MAX_INPUT_BYTES"
+        fi
+    fi
+}
+
+CONTENT="$(read_input_content "$INPUT")"
 if [[ -f "$INPUT" ]]; then
-    CONTENT=$(cat "$INPUT")
     echo "Reading from file: $INPUT"
+    INPUT_DESCRIPTOR="$INPUT"
 else
-    CONTENT="$INPUT"
-    echo "Using provided text"
+    INPUT_BYTES="$(printf '%s' "$INPUT" | wc -c | tr -d '[:space:]')"
+    INPUT_DESCRIPTOR="[inline text: ${INPUT_BYTES} bytes]"
+    echo "Using provided text: $INPUT_DESCRIPTOR"
 fi
 
 # =============================================================================
@@ -132,29 +270,72 @@ AGENTS=("codex" "gemini" "claude")
 LABELS=("A" "B" "C")
 
 # Fisher-Yates shuffle for labels
+random_index() {
+    local max="$1"
+    local range
+    local limit
+    local raw
+    range=32768
+    if od -An -N2 -tu2 /dev/urandom >/dev/null 2>&1; then
+        range=65536
+    fi
+    limit=$((range - (range % (max + 1))))
+    while :; do
+        if raw="$(od -An -N2 -tu2 /dev/urandom 2>/dev/null | tr -d '[:space:]')"; then
+            :
+        else
+            raw="$RANDOM"
+        fi
+        if [[ "$raw" -lt "$limit" ]]; then
+            echo $((raw % (max + 1)))
+            return 0
+        fi
+    done
+}
 for ((i=${#LABELS[@]}-1; i>0; i--)); do
-    j=$((RANDOM % (i+1)))
+    j="$(random_index "$i")"
     tmp="${LABELS[$i]}"
     LABELS[$i]="${LABELS[$j]}"
     LABELS[$j]="$tmp"
 done
 
-# Create mapping (kept secret from agents)
-declare -A AGENT_TO_LABEL
-declare -A LABEL_TO_AGENT
-for i in "${!AGENTS[@]}"; do
-    AGENT_TO_LABEL["${AGENTS[$i]}"]="${LABELS[$i]}"
-    LABEL_TO_AGENT["${LABELS[$i]}"]="${AGENTS[$i]}"
+# bash3-compatible mapping helpers (no associative arrays)
+CODEX_LABEL="${LABELS[0]}"
+GEMINI_LABEL="${LABELS[1]}"
+CLAUDE_LABEL="${LABELS[2]}"
+
+label_for_agent() {
+    case "$1" in
+        codex) echo "$CODEX_LABEL" ;;
+        gemini) echo "$GEMINI_LABEL" ;;
+        claude) echo "$CLAUDE_LABEL" ;;
+        *) echo "?" ;;
+    esac
+}
+
+REVIEWER_A_AGENT=""
+REVIEWER_B_AGENT=""
+REVIEWER_C_AGENT=""
+for agent in "${AGENTS[@]}"; do
+    label="$(label_for_agent "$agent")"
+    case "$label" in
+        A) REVIEWER_A_AGENT="$agent" ;;
+        B) REVIEWER_B_AGENT="$agent" ;;
+        C) REVIEWER_C_AGENT="$agent" ;;
+    esac
 done
 
 # Save mapping for orchestrator reference only
 cat > "$CONSENSUS_DIR/mapping.secret" <<EOF
 # BLINDING MAP - DO NOT SHARE WITH AGENTS
 # Generated: $TIMESTAMP
-# Reviewer A = ${LABEL_TO_AGENT[A]}
-# Reviewer B = ${LABEL_TO_AGENT[B]}
-# Reviewer C = ${LABEL_TO_AGENT[C]}
+# Reviewer A = ${REVIEWER_A_AGENT}
+# Reviewer B = ${REVIEWER_B_AGENT}
+# Reviewer C = ${REVIEWER_C_AGENT}
 EOF
+if ! chmod 600 "$CONSENSUS_DIR/mapping.secret" 2>/dev/null; then
+    echo "Warning: Could not chmod 600 $CONSENSUS_DIR/mapping.secret" >&2
+fi
 
 echo ""
 echo "================================================================"
@@ -163,6 +344,18 @@ echo "================================================================"
 echo ""
 echo "Agents assigned anonymous labels (A/B/C) - mapping is secret."
 echo ""
+
+# Strict requirement: all three reviewer CLIs must be available.
+MISSING_CLIS=()
+for cli in codex gemini claude; do
+    if ! command -v "$cli" >/dev/null 2>&1; then
+        MISSING_CLIS+=("$cli")
+    fi
+done
+if [[ "${#MISSING_CLIS[@]}" -gt 0 ]]; then
+    echo "Error: blinded consensus requires all reviewer CLIs. Missing: ${MISSING_CLIS[*]}" >&2
+    exit 127
+fi
 
 # =============================================================================
 # Mode-specific prompt templates
@@ -197,7 +390,7 @@ ASSESSMENT:
 ISSUES (if any):
 - [Issue]: [Why it matters] -> [Proposed fix]
 
-VERDICT: APPROVE / REJECT / CONDITIONAL (explain conditions)
+VERDICT: [APPROVE|REJECT|CONDITIONAL] (choose exactly one)
 
 REASONING: [2-3 sentence summary of your overall assessment logic]
 
@@ -229,7 +422,7 @@ ASSESSMENT:
 BUGS/ISSUES (if any):
 - [Location]: [What goes wrong] -> [Fix]
 
-VERDICT: APPROVE / REJECT / CONDITIONAL
+VERDICT: [APPROVE|REJECT|CONDITIONAL] (choose exactly one)
 
 REASONING: [2-3 sentence summary]
 
@@ -264,7 +457,7 @@ ERRORS/CONCERNS:
 
 COMPLETENESS: [What's missing vs. plan]
 
-VERDICT: VALID / INVALID / NEEDS REVISION
+VERDICT: [VALID|INVALID|NEEDS REVISION] (choose exactly one)
 
 REASONING: [2-3 sentence summary]
 
@@ -297,7 +490,7 @@ ASSESSMENT:
 REVISIONS NEEDED:
 - [Location]: [Issue] -> [Suggested revision]
 
-VERDICT: PUBLISHABLE / MAJOR REVISION / MINOR REVISION
+VERDICT: [PUBLISHABLE|MAJOR REVISION|MINOR REVISION] (choose exactly one)
 
 REASONING: [2-3 sentence summary]
 
@@ -368,7 +561,8 @@ PROMPT
 invoke_agent() {
     local agent="$1"
     local prompt="$2"
-    local label="${AGENT_TO_LABEL[$agent]}"
+    local label
+    label="$(label_for_agent "$agent")"
 
     local reviewer_header="REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS (claude, codex, gemini).
 You MAY read files, web search, and run sanity checks. Provide YOUR expert review only.
@@ -379,17 +573,56 @@ You are Reviewer $label in a blinded consensus process. Do not reveal your ident
 
     case "$agent" in
         codex)
+            if ! command -v codex >/dev/null 2>&1; then
+                echo "Error: codex CLI not found for Reviewer $label." >&2
+                return 127
+            fi
             local args=(exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check)
+            args+=(-m "$CODEX_MODEL")
+            args+=(-c "model_reasoning_effort=\"$CODEX_REASONING_EFFORT\"")
             [[ -n "$SEARCH_FLAG" ]] && args+=(--search)
             args+=(--cd "$CD_PATH")
             args+=("$full_prompt")
-            codex "${args[@]}" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
+            if ! run_with_timeout codex "${args[@]}"; then
+                echo "Error: Reviewer $label (codex) failed or timed out." >&2
+                return 1
+            fi
             ;;
         gemini)
-            gemini --yolo -p "$full_prompt" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
+            if ! command -v gemini >/dev/null 2>&1; then
+                echo "Error: gemini CLI not found for Reviewer $label." >&2
+                return 127
+            fi
+            local args=(gemini --yolo --model "$GEMINI_MODEL" -p "$full_prompt")
+            if [[ -n "$CD_PATH" ]]; then
+                if ! (cd "$CD_PATH" && run_with_timeout "${args[@]}"); then
+                    echo "Error: Reviewer $label (gemini) failed or timed out." >&2
+                    return 1
+                fi
+            else
+                if ! run_with_timeout "${args[@]}"; then
+                    echo "Error: Reviewer $label (gemini) failed or timed out." >&2
+                    return 1
+                fi
+            fi
             ;;
         claude)
-            claude --dangerously-skip-permissions -p "$full_prompt" 2>/dev/null || echo "[Reviewer $label review unavailable - agent error]"
+            if ! command -v claude >/dev/null 2>&1; then
+                echo "Error: claude CLI not found for Reviewer $label." >&2
+                return 127
+            fi
+            local args=(claude --dangerously-skip-permissions --model "$CLAUDE_MODEL" -p "$full_prompt")
+            if [[ -n "$CD_PATH" ]]; then
+                if ! (cd "$CD_PATH" && run_with_timeout "${args[@]}"); then
+                    echo "Error: Reviewer $label (claude) failed or timed out." >&2
+                    return 1
+                fi
+            else
+                if ! run_with_timeout "${args[@]}"; then
+                    echo "Error: Reviewer $label (claude) failed or timed out." >&2
+                    return 1
+                fi
+            fi
             ;;
     esac
 }
@@ -397,10 +630,18 @@ You are Reviewer $label in a blinded consensus process. Do not reveal your ident
 anonymize_review() {
     # Strip any accidental self-identification from reviews
     local review="$1"
-    echo "$review" \
-        | sed -E 's/\b[Aa]s (Claude|Codex|Gemini|GPT|OpenAI|Google|Anthropic)\b/As a reviewer/g' \
-        | sed -E 's/\bI am (Claude|Codex|Gemini|GPT-[0-9.]+|an AI)\b/I am a reviewer/g' \
-        | sed -E 's/\b(Claude|Codex|Gemini) (here|speaking|reviewing)\b/Reviewer reviewing/g'
+    if [[ -n "$PERL_BIN" ]]; then
+        printf '%s\n' "$review" | "$PERL_BIN" -pe '
+          s/\b[Aa]s (Claude|Codex|Gemini|GPT|OpenAI|Google|Anthropic)\b/As a reviewer/g;
+          s/\bI am (Claude|Codex|Gemini|GPT-[0-9.]+|an AI)\b/I am a reviewer/g;
+          s/\b(Claude|Codex|Gemini) (here|speaking|reviewing)\b/Reviewer reviewing/g;
+        '
+        return 0
+    fi
+    printf '%s\n' "$review" | sed -E \
+      -e 's/[Aa]s ([Cc]laude|[Cc]odex|[Gg]emini|GPT|OpenAI|Google|Anthropic)/As a reviewer/g' \
+      -e 's/[Ii] am ([Cc]laude|[Cc]odex|[Gg]emini|GPT-[0-9.]+|an AI)/I am a reviewer/g' \
+      -e 's/([Cc]laude|[Cc]odex|[Gg]emini) (here|speaking|reviewing)/Reviewer reviewing/g'
 }
 
 # =============================================================================
@@ -415,10 +656,13 @@ echo ""
 REVIEW_PROMPT=$(build_review_prompt "$MODE" "$CONTENT")
 
 for agent in "${AGENTS[@]}"; do
-    label="${AGENT_TO_LABEL[$agent]}"
+    label="$(label_for_agent "$agent")"
     echo "--- Collecting review from Reviewer $label ---"
 
-    raw_review=$(invoke_agent "$agent" "$REVIEW_PROMPT")
+    if ! raw_review="$(invoke_agent "$agent" "$REVIEW_PROMPT" 2>&1)"; then
+        echo "Error: failed to collect round 1 review from Reviewer $label." >&2
+        exit 1
+    fi
     clean_review=$(anonymize_review "$raw_review")
 
     echo "$clean_review" > "$CONSENSUS_DIR/round1_reviewer_${label}.txt"
@@ -447,9 +691,62 @@ echo "$ROUND1_REVIEWS" > "$CONSENSUS_DIR/round1_compiled.txt"
 
 check_consensus() {
     local reviews_file="$1"
-    # Simple heuristic: check if all verdicts align
-    local approvals=$(grep -ciE '(VERDICT:.*APPROV|VERDICT:.*VALID|VERDICT:.*PUBLISHABLE|VERDICT:.*MINOR)' "$reviews_file" 2>/dev/null || echo 0)
-    local rejections=$(grep -ciE '(VERDICT:.*REJECT|VERDICT:.*INVALID|VERDICT:.*MAJOR|VERDICT:.*NEEDS)' "$reviews_file" 2>/dev/null || echo 0)
+    local round
+    local approvals=0
+    local rejections=0
+    local verdict_line
+    local verdict_lines
+    local verdict_value
+    local verdict_class
+    local reviewer_file
+
+    if [[ "$reviews_file" =~ round([0-9]+)_compiled\.txt$ ]]; then
+        round="${BASH_REMATCH[1]}"
+    else
+        echo "UNCLEAR"
+        return 0
+    fi
+
+    for label in A B C; do
+        reviewer_file="$CONSENSUS_DIR/round${round}_reviewer_${label}.txt"
+        if [[ ! -f "$reviewer_file" ]]; then
+            continue
+        fi
+
+        verdict_lines="$(grep -Ei 'VERDICT[[:space:]]*:' "$reviewer_file" || true)"
+        if [[ -z "$verdict_lines" ]]; then
+            continue
+        fi
+
+        verdict_class="UNCLEAR"
+        while IFS= read -r verdict_line; do
+            [[ -z "$verdict_line" ]] && continue
+            verdict_value="$(printf '%s\n' "$verdict_line" | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]+$//' | tr '[:lower:]' '[:upper:]' | sed -E 's/[*_`]+//g; s/[[:space:]]+/ /g')"
+            case "$verdict_value" in
+                *"/"*|*"|"*|*" OR "*|*"["*|*"]"*|*"ONE OF "*)
+                    continue
+                    ;;
+                APPROVE*|APPROVED*|VALID*|PUBLISHABLE*|PASS*)
+                    verdict_class="APPROVE"
+                    break
+                    ;;
+                REJECT*|REJECTED*|INVALID*|MAJOR\ REVISION*|MINOR\ REVISION*|NEEDS\ CHANGE*|NEEDS\ CHANGES*|NEEDS\ REVISION*|CONDITIONAL*|CONDITIONALLY*|FAIL*|FAILED*|NOT\ APPROVED*)
+                    verdict_class="REJECT"
+                    break
+                    ;;
+            esac
+        done <<< "$verdict_lines"
+
+        case "$verdict_class" in
+            APPROVE)
+                approvals=$((approvals + 1))
+                ;;
+            REJECT)
+                rejections=$((rejections + 1))
+                ;;
+        esac
+    done
+
     local total=$((approvals + rejections))
 
     if [[ "$total" -eq 0 ]]; then
@@ -501,11 +798,14 @@ while [[ "$CURRENT_ROUND" -lt "$MAX_ROUNDS" ]]; do
     NEXT_REVIEWS=""
 
     for agent in "${AGENTS[@]}"; do
-        label="${AGENT_TO_LABEL[$agent]}"
+        label="$(label_for_agent "$agent")"
         echo "--- Reviewer $label responding to discussion ---"
 
         discussion_prompt=$(build_discussion_prompt "$NEXT_ROUND" "$label" "$CURRENT_REVIEWS" "$CONTENT" "$MODE")
-        raw_response=$(invoke_agent "$agent" "$discussion_prompt")
+        if ! raw_response="$(invoke_agent "$agent" "$discussion_prompt" 2>&1)"; then
+            echo "Error: failed to collect discussion response from Reviewer $label (round $NEXT_ROUND)." >&2
+            exit 1
+        fi
         clean_response=$(anonymize_review "$raw_response")
 
         echo "$clean_response" > "$CONSENSUS_DIR/round${NEXT_ROUND}_reviewer_${label}.txt"
@@ -536,7 +836,7 @@ echo "  BLINDED CONSENSUS REPORT"
 echo "================================================================"
 echo ""
 echo "Mode:           $MODE"
-echo "Input:          $INPUT"
+echo "Input:          $INPUT_DESCRIPTOR"
 echo "Rounds:         $CURRENT_ROUND / $MAX_ROUNDS"
 echo "Final Status:   $FINAL_STATUS"
 echo "Timestamp:      $TIMESTAMP"
@@ -547,7 +847,7 @@ FULL_REPORT="# Blinded Consensus Report
 
 ## Summary
 - **Mode**: $MODE
-- **Input**: $INPUT
+- **Input**: $INPUT_DESCRIPTOR
 - **Rounds completed**: $CURRENT_ROUND / $MAX_ROUNDS
 - **Final consensus**: $FINAL_STATUS
 - **Timestamp**: $TIMESTAMP
@@ -570,23 +870,31 @@ $review
     done
 done
 
+case "$FINAL_STATUS" in
+    CONSENSUS_APPROVE) FINAL_NOTE="All three reviewers independently approved. Consensus is strong." ;;
+    CONSENSUS_REJECT)  FINAL_NOTE="All three reviewers independently rejected. Revision required." ;;
+    MAJORITY_APPROVE)  FINAL_NOTE="Majority (2/3) approved. Review minority objections before proceeding." ;;
+    MAJORITY_REJECT)   FINAL_NOTE="Majority (2/3) rejected. Address identified issues before re-review." ;;
+    NO_CONSENSUS)      FINAL_NOTE="No consensus reached after $CURRENT_ROUND rounds. Escalate to human judgment." ;;
+    UNCLEAR)           FINAL_NOTE="Verdicts could not be parsed. Manual review of discussion required." ;;
+    *)                 FINAL_NOTE="Consensus outcome not recognized. Review output manually." ;;
+esac
+
+ARCHIVE_NOTE="Discussion directory is temporary and will be removed on exit."
+if [[ "$KEEP_CONSENSUS_DIR" -eq 1 ]] || [[ -n "$CONSENSUS_DIR_EXTERNAL" ]]; then
+    ARCHIVE_NOTE="Discussion directory kept at: $CONSENSUS_DIR/"
+fi
+
 FULL_REPORT+="
 ## Consensus Status
 
 **$FINAL_STATUS**
 
-$(case "$FINAL_STATUS" in
-    CONSENSUS_APPROVE) echo "All three reviewers independently approved. Consensus is strong." ;;
-    CONSENSUS_REJECT)  echo "All three reviewers independently rejected. Revision required." ;;
-    MAJORITY_APPROVE)  echo "Majority (2/3) approved. Review minority objections before proceeding." ;;
-    MAJORITY_REJECT)   echo "Majority (2/3) rejected. Address identified issues before re-review." ;;
-    NO_CONSENSUS)      echo "No consensus reached after $CURRENT_ROUND rounds. Escalate to human judgment." ;;
-    UNCLEAR)           echo "Verdicts could not be parsed. Manual review of discussion required." ;;
-esac)
+$FINAL_NOTE
 
 ---
 *Blinding key stored in: $CONSENSUS_DIR/mapping.secret*
-*Full discussion archived in: $CONSENSUS_DIR/*
+*$ARCHIVE_NOTE*
 "
 
 echo "$FULL_REPORT"
@@ -599,5 +907,9 @@ if [[ -n "$OUTPUT_FILE" ]]; then
 fi
 
 echo ""
-echo "Discussion archive: $CONSENSUS_DIR/"
+if [[ "$KEEP_CONSENSUS_DIR" -eq 1 ]] || [[ -n "$CONSENSUS_DIR_EXTERNAL" ]]; then
+    echo "Discussion archive: $CONSENSUS_DIR/"
+else
+    echo "Discussion archive: temporary directory (auto-cleanup enabled)."
+fi
 echo "================================================================"

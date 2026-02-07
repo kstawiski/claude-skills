@@ -37,7 +37,7 @@ When MCP servers are configured, use this pattern in Claude Code:
 
 ```
 Use mcp__codex-cli__codex with parameters:
-- model: "gpt-5.2-codex"
+- model: "gpt-5.3-codex"
 - reasoningEffort: "high"
 - sandbox: "danger-full-access"
 - fullAuto: true
@@ -66,7 +66,7 @@ Claude creates initial implementation plan.
 ```python
 # Conceptual MCP call
 codex_result = mcp__codex-cli__codex(
-    model="gpt-5.2-codex",
+    model="gpt-5.3-codex",
     reasoningEffort="high",
     sandbox="danger-full-access",
     fullAuto=True,
@@ -128,7 +128,7 @@ gemini_result = mcp__gemini-cli__gemini(
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `model` | string | Model ID (e.g., "gpt-5.2-codex") |
+| `model` | string | Model ID (e.g., "gpt-5.3-codex") |
 | `reasoningEffort` | string | "low", "medium", "high" |
 | `sandbox` | string | "read-only", "workspace-write", "danger-full-access" |
 | `fullAuto` | boolean | Skip approval prompts |

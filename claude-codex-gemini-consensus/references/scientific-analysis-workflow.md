@@ -65,7 +65,7 @@ Validate the research question with both agents:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files and run sanity checks.
@@ -111,7 +111,7 @@ Claude proposes comprehensive analysis plan.
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files and web search.
@@ -256,7 +256,7 @@ For each major analysis, submit results to both agents:
 ```bash
 # Codex validation (concise) - REVIEWER_MODE allows sanity checks
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
@@ -308,7 +308,7 @@ If issues found:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
@@ -415,7 +415,7 @@ Each corrected analysis must be validated:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 You MAY read files and run sanity checks to verify the correction.
@@ -439,7 +439,7 @@ Corrected Analysis:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
@@ -536,7 +536,7 @@ For each section, draft then validate:
 ```bash
 # Validate Methods section - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for standards.
 
@@ -863,7 +863,7 @@ Statistical comparisons: [tests used]. Abbreviations: [Define all].*
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
@@ -887,7 +887,7 @@ Check: accuracy, clarity, completeness, captions, standards."
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
 You MAY web search for clinical guidelines and literature.
@@ -1036,7 +1036,7 @@ After completing the report, apply humanization:
 ```bash
 # Humanize the report - REVIEWER_MODE
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY read files.
@@ -1121,7 +1121,7 @@ Use Vancouver style for medical journals:
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --search \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
@@ -1172,7 +1172,7 @@ BE CONCISE. No preamble. Output format: [specify structure]
 ```bash
 # 1. Submit to Codex (REVIEWER_MODE)
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --cd "$(pwd)" \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS.
@@ -1193,7 +1193,7 @@ BE CONCISE. [TASK]. Output: ISSUES: / VERDICT:"
 ```bash
 # Codex with search (REVIEWER_MODE)
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --search \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.
@@ -1254,7 +1254,7 @@ For oncology research with molecular data, you may want to hypothesize the cance
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --search \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search for PMIDs.
@@ -1289,7 +1289,7 @@ Output for plan.md (if applicable):
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --search \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.
@@ -1306,7 +1306,7 @@ Data summary: [DATA]"
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --search \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.
@@ -1323,7 +1323,7 @@ Data summary: [DATA]"
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --search \
   "REVIEWER_MODE. DO NOT INVOKE OTHER AGENTS. You MAY web search.

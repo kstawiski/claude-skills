@@ -41,7 +41,7 @@ codex logout
 |------|------|-------------|
 | `PROMPT` | string | Initial instruction (omit to launch TUI) |
 | `--image, -i` | path[,path...] | Attach images to prompt |
-| `--model, -m` | string | Model override (e.g., `gpt-5.2-codex`, `gpt-5`, `o3`) |
+| `--model, -m` | string | Model override (e.g., `gpt-5.3-codex`, `gpt-5`, `o3`) |
 | `--oss` | boolean | Use local Ollama models |
 | `--profile, -p` | string | Config profile from config.toml |
 | `--sandbox, -s` | enum | `read-only`, `workspace-write`, `danger-full-access` |
@@ -84,19 +84,19 @@ codex e "Generate unit tests"  # alias
 
 # YOLO mode - full permissions, no approvals (recommended for automation)
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "YOUR_TASK"
 
 # Short form with --yolo alias
 codex exec --yolo \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "YOUR_TASK"
 
 # With web search
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --search \
   "Search for best practices and implement"
@@ -216,7 +216,8 @@ codex execpolicy evaluate rules.toml "rm -rf /"
 
 ```toml
 # Model selection
-model = "gpt-5.2-codex"
+model = "gpt-5.3-codex"
+model_reasoning_effort = "xhigh"  # use "high" for faster/cheaper runs
 
 # Approval policy: untrusted, on-failure, on-request, never
 approval_policy = "on-request"
@@ -298,7 +299,7 @@ This is a Python medical imaging analysis project.
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "Review this code critically. Check: correctness, edge cases, \
    error handling, security, performance. Code: $(cat src/main.py)"
@@ -308,7 +309,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "Review this code critically for clinical research. \
    Check: correctness, edge cases, error handling, \
@@ -319,7 +320,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   "Run all tests, fix any failures, ensure 100% pass rate"
 ```
@@ -328,7 +329,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 
 ```bash
 codex exec --dangerously-bypass-approvals-and-sandbox \
-  --model gpt-5.2-codex \
+  --model gpt-5.3-codex \
   --skip-git-repo-check \
   --search \
   "Search PubMed for latest findings on [TOPIC] and summarize"
@@ -350,7 +351,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
 
 | Model | Best For |
 |-------|----------|
-| `gpt-5.2-codex` | Default, repo-scale reasoning |
+| `gpt-5.3-codex` | Default, repo-scale reasoning |
 | `gpt-5` | Fast reasoning (Windows default) |
 | `o3` | Deep reasoning tasks |
 | Local (Ollama) | Privacy-sensitive work |

@@ -78,7 +78,6 @@ claude -p "Summarize README.md"
 
 # Full auto with all permissions (YOLO mode)
 claude --dangerously-skip-permissions \
-  
   -p "YOUR_TASK"
 
 # Piping input
@@ -185,7 +184,6 @@ Configure MCP servers in Claude settings:
 
 ```bash
 claude --dangerously-skip-permissions \
-  
   -p "Review this code critically for clinical research. \
       Check: correctness, edge cases, error handling, \
       security, performance. Be rigorous. \
@@ -232,12 +230,12 @@ claude --dangerously-skip-permissions \
 | Model | Description |
 |-------|-------------|
 | `sonnet` | Latest, balanced performance/cost |
-| `opus` | Most capable, highest cost |
+| `opus` | Most capable (preferred: Opus 4.6 family alias) |
 | `haiku` | Fast, cost-effective |
 
 ```bash
 # Select model
-claude -m sonnet -p "..."
+claude -m opus -p "..."
 
 # Change in interactive mode
 > /model opus
