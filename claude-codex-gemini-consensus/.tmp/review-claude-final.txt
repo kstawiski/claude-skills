@@ -1,0 +1,16 @@
+VERDICT: NEEDS_CHANGES
+
+ISSUES:
+1. **blinded-consensus.sh:295-299** - Array index assignment syntax `LABELS[$i]="${LABELS[$j]}"` without `declare -a` may fail on older bash versions or when arrays become sparse. The Fisher-Yates shuffle modifies array in-place, but on bash 3.2 (macOS default), this works only if `LABELS` is correctly initialized as an indexed array.
+
+2. **blinded-consensus.sh:581** - Gemini invocation includes `gemini` in the array (`args=(gemini --yolo ...)`), then calls `run_with_timeout "${args[@]}"`. This embeds the command in the args array, which is inconsistent with codex (line 574) where `run_with_timeout codex "${args[@]}"` is used with `codex` passed separately. The gemini call works but is stylistically inconsistent and could confuse maintainers.
+
+3. **blinded-consensus.sh:614-617** - The `sed -E` fallback for `anonymize_review` uses extended regex which is supported on both GNU and BSD sed, but the character class patterns like `[Cc]laude` in the replacement might behave differently. Specifically, the patterns assume case-insensitive matching via character classes, but testing shows this works. However, the `\b` word boundary used in Perl is not replicated in the sed version—sed patterns lack word boundaries, so "XClaude" would also match. Minor functional inconsistency.
+
+4. **consensus-review.sh:213** & **blinded-consensus.sh:237** - The local variable declaration `local LC_ALL=C` inside `read_input_content()` sets LC_ALL for the function scope, but `${#src}` and `${src:0:$MAX_INPUT_BYTES}` string operations are evaluated in the current locale before LC_ALL takes effect on the same line. The intent is to get byte length, but bash `${#var}` returns character count, not byte count. For multi-byte UTF-8 input, `${#src}` undercounts bytes. Should use `printf '%s' "$src" | wc -c` for actual byte length.
+
+5. **review.sh:163-168** & **blinded-consensus.sh:568-573** - Codex is invoked with `-c "model_reasoning_effort=\"$CODEX_REASONING_EFFORT\""`. If `CODEX_REASONING_EFFORT` contains special characters or spaces (though validated to high|xhigh), the nested quoting is correct, but the `-c` flag syntax assumes codex CLI accepts JSON-like config. This is a minor documentation/clarity issue rather than a bug, but the quoting is unusual.
+
+6. **All three scripts** - The Perl fallback timeout (lines ~56-76 in each) uses `alarm` which works on Unix but won't work on native Windows (if scripts are ever run under WSL, they work, but Cygwin/MSYS2 behavior may vary). This is acceptable for Linux/macOS target but worth noting for portability.
+
+7. **blinded-consensus.sh:639** - `wc -l` counts newlines, so an empty review or one without trailing newline reports 0 lines even if content exists. Minor display issue.
